@@ -1,0 +1,78 @@
+/*
+* Licensed Materials - Property of IBM Corp.
+* IBM UrbanCode Build
+* (c) Copyright IBM Corporation 2012, 2014. All Rights Reserved.
+*
+* U.S. Government Users Restricted Rights - Use, duplication or disclosure restricted by
+* GSA ADP Schedule Contract with IBM Corp.
+*/
+
+
+div.changeSetHistory {
+  font-size: 11px;
+  font-family: sans-serif;}
+  
+div.changes { border: 1px solid #75a3ba; border-bottom: none; clear: both; padding: 0px; margin: 0px; }
+table.changes { width: 100%; table-layout: fixed; border-collapse: collapse; padding: 0; margin: 0 }
+table.changes td { border: none; border-bottom: 1px solid #75a3ba; white-space: nowrap; overflow: hidden; text-overflow: clip; vertical-align: middle; padding: 3px; font-size: 11px; font-family: sans-serif;}
+table.changes img { margin: 0; padding: 0; vertical-align: middle;}
+table.changes th { background: #85A9C0; border-bottom: 1px solid #75a3ba; color: white; padding: 3px; margin: 0; font-size: 11px; font-family: sans-serif;}
+table.changes tr.header { background: #85A9C0; padding: 0; margin: 0}
+table.changes tr.build { line-height: normal; background: #f3faff; }
+table.changes tr.build span.build { cursor: pointer; }
+table.changes tr.change { line-height: normal; background: #fffffa; }
+table.changes tr.change *.description { white-space: nowrap; overflow: hidden; text-overflow: clip; }
+table.changes tr.change *.name { white-space: nowrap; overflow: hidden; text-overflow: clip; }
+table.changes tr.change span.change { cursor: pointer; }
+table.changes tr.changeDetail { }
+table.changes tr.changeDetail td { white-space: normal; overflow: auto; vertical-align: top; background: #fafae6; }
+table.changes tr.changeDetail td.description { padding-left: 48px; padding-right: 10ex; background: #fafae6;}
+table.changes td.date { white-space: nowrap; }
+
+div.changeFilter {
+  padding: 10px; }
+div.changeFilter *.controls {
+  border-collapse: collapse;
+  border: 1px solid #7b7b7b; 
+  background: #f1f1f1; }
+div.changeFilter *.controls input, div.changeFilter *.controls select {
+  font-size: 12px; }
+div.changeFilter *.fieldLabel {
+  font-size:10px; }
+div.changeFilter *.filterLabel {
+  font-size:12px;
+  font-weight: bold;
+  color: #565656; }
+  
+div.viewFileList { margin-top: 1em; }
+div.viewFileList *.view { display: block; white-space: nowrap; cursor: pointer; font: 10px; z-index: 1; }
+div.viewFileList *.fileList { position: absolute; display: none; }
+div.viewFileList *.fileList table { 
+  background-color: white; 
+  border: 1px solid #75a3ba;
+  position: absolute; 
+  left: 100px; 
+  width: 640px; 
+  overflow: hidden;
+  z-index: 10 }
+div.viewFileList *.fileList td { border: none; padding: 0px 1px; text-align: left; }
+div.viewFileList *.fileList td.change { border-right: 1px solid #75a3ba; width: 4ex; text-align: center; }
+div.viewFileList *.fileList td.change div { margin: 2px; padding: 1px 3px; }
+div.viewFileList *.fileList tr.first td { padding-top: 8px; }
+div.viewFileList *.fileList tr.last td { padding-bottom: 8px; }
+
+table.changes { border-collapse: collapse; }
+table.changes span.exp { color: red; font-weight: bold; cursor: pointer; font-size: 16px; vertical-align: middle;}
+table.changes *.level1 { padding-left: 16px; }
+table.changes *.level2 { padding-left: 32px; }
+
+table.changes *.buildChange { width: 24ex; white-space: nowrap; overflow: hidden; }
+table.changes *.projectWorkflow { white-space: nowrap; overflow: hidden; }
+table.changes *.result { width: 8em; white-space: nowrap; overflow: hidden; }
+table.changes *.changes { width: 10ex; white-space: nowrap; overflow: hidden; }
+table.changes *.user { width: 15ex; text-align: center; white-space: nowrap; overflow: hidden; }
+table.changes *.date { width: 18ex; white-space: nowrap; overflow: hidden; }
+table.changes th.description { text-align: left; }
+table.changes th.changes { text-align: center; }
+table.changes td.changes { text-align: center; }
+table.changes th.date { text-align: center; }

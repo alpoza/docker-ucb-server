@@ -1,0 +1,3 @@
+# This file contains arguments passed to the JVM running the ActiveMQ broker.
+# Each argument should be on its own line. Lines that begin with '#' are comments.
+-Xmx512m

@@ -1,0 +1,66 @@
+<?xml version="1.0" encoding="ISO-8859-1" ?>
+<!DOCTYPE taglib PUBLIC "-//Sun Microsystems, Inc.//DTD JSP Tag Library 1.1//EN"
+        "http://java.sun.com/j2ee/dtds/web-jsptaglibrary_1_1.dtd">
+<!--
+- Licensed Materials - Property of IBM Corp.
+- IBM UrbanCode Build
+- (c) Copyright IBM Corporation 2012, 2014. All Rights Reserved.
+-
+- U.S. Government Users Restricted Rights - Use, duplication or disclosure restricted by
+- GSA ADP Schedule Contract with IBM Corp.
+-->
+
+<taglib>
+  <tlibversion>1.0</tlibversion>
+  <jspversion>1.1</jspversion>
+  <shortname>auth</shortname>
+  <uri></uri>
+  <info>Authorization checks</info>
+
+  <tag>
+    <name>check</name>
+    <tagclass>com.urbancode.ubuild.web.tags.AuthorityCheckTag</tagclass>
+    <bodycontent>empty</bodycontent>
+    <info>Check to see if the current user can perform a action on a SecuredPersistent and set a var with the result.</info>
+    <attribute>
+      <name>persistent</name>
+      <required>true</required>
+      <rtexprvalue>true</rtexprvalue>
+    </attribute>
+    <attribute>
+      <name>action</name>
+      <required>true</required>
+      <rtexprvalue>true</rtexprvalue>
+    </attribute>
+    <attribute>
+      <name>var</name>
+      <required>true</required>
+      <rtexprvalue>false</rtexprvalue>
+    </attribute>
+    <attribute>
+      <name>resultWhenNotFound</name>
+      <rtexprvalue>false</rtexprvalue>
+    </attribute>
+  </tag>
+
+  <tag>
+    <name>checkAction</name>
+    <tagclass>com.urbancode.ubuild.web.tags.AuthorityActionCheckTag</tagclass>
+    <bodycontent>empty</bodycontent>
+    <info>Check to see if the current user has the given action from any role on any team.</info>
+    <attribute>
+      <name>action</name>
+      <required>true</required>
+      <rtexprvalue>true</rtexprvalue>
+    </attribute>
+    <attribute>
+      <name>var</name>
+      <required>true</required>
+      <rtexprvalue>false</rtexprvalue>
+    </attribute>
+    <attribute>
+      <name>resultWhenNotFound</name>
+      <rtexprvalue>false</rtexprvalue>
+    </attribute>
+  </tag>
+</taglib>

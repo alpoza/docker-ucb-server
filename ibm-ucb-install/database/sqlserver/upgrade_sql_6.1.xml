@@ -1,0 +1,676 @@
+<?xml version="1.0"?>
+<!--
+- Licensed Materials - Property of IBM Corp.
+- IBM UrbanCode Build
+- (c) Copyright IBM Corporation 2012, 2014. All Rights Reserved.
+-
+- U.S. Government Users Restricted Rights - Use, duplication or disclosure restricted by
+- GSA ADP Schedule Contract with IBM Corp.
+-->
+
+<change-set release="6.1">
+
+  <library name="plugin-server"
+      release="1.0"
+      base-dir="plugin-server"
+      file="plugin-server/sqlserver/upgrade_sql_1.0.xml"
+      version-table="pl_db_version"
+      release-column="release_name"
+      version-column="ver"/>
+  />
+  <library name="property-sheets"
+      release="1.0"
+      base-dir="property-sheets"
+      file="property-sheets/sqlserver/upgrade_sql_1.0.xml"
+      version-table="ps_db_version"
+      release-column="release_name"
+      version-column="ver"/>
+  />
+  <library name="reporting"
+      release="4.0"
+      base-dir="reporting"
+      file="reporting/sqlserver/upgrade_sql_4.0.xml"
+      version-table="REPORT_DB_VERSION"
+      release-column="RELEASE_NAME"
+      version-column="VER"/>
+  />
+  <library name="security"
+      release="1.0"
+      base-dir="security"
+      file="security/sqlserver/upgrade_1.0.xml"
+      version-table="sec_db_version"
+      release-column="release_name"
+      version-column="ver"/>
+  />
+  <library name="workflow"
+      release="1.0"
+      base-dir="workflow"
+      file="workflow/sqlserver/upgrade_sql_1.0.xml"
+      version-table="wf_db_version"
+      release-column="release_name"
+      version-column="ver"/>
+  />
+
+  <change number="1">
+    <description>Rename uBuild to IBM UrbanCode Build</description>
+    <sql separator=";">
+      UPDATE sec_authorization_realm SET name = 'Internal Authorization', description = 'Internal Authorization'
+      WHERE id = '00000000-0000-0000-0000-000000000000' AND name = 'uBuild Authorization';
+
+      UPDATE sec_authentication_realm SET name = 'Internal Authentication', description = 'Internal Authentication'
+      WHERE id = '00000000-0000-0000-0000-000000000001' AND name = 'uBuild Authentication';
+
+      UPDATE sec_action SET description = 'Ability to manage the system configuration of the server itself. You only need this action granted by a role. There is no resource that needs to be added to a user''s team.'
+      WHERE id = '00000000-0000-0000-0000-000000000037';
+    </sql>
+  </change>
+
+  <change number="2">
+    <description>Add project process-level artifact download control.</description>
+    <sql separator=";">
+      UPDATE sec_action SET name = 'Project Artifact Download' WHERE id = '00000000-0000-0000-0000-000000000059';
+
+      insert into sec_action (id, version, name, description, enabled, cascading, sec_resource_type_id)
+          values ('00000000-0000-0000-0000-000000000105', 0, 'Process Artifact Download', 'Ability to download artifacts produced by a build process.', 'Y', 'N', '00000000-0000-0000-0000-000000000007');
+    </sql>
+  </change>
+
+  <change number="3">
+    <description>Drop old licensing information</description>
+    <sql separator=";">
+      DELETE FROM HI_LO_SEQ WHERE SEQ_NAME = 'UBUILD_LICENSE';
+      DROP TABLE UBUILD_LICENSE;
+    </sql>
+  </change>
+
+  <change number="4">
+    <description>Drop old event script table</description>
+    <sql separator=";">
+      ALTER TABLE WORKFLOW_TRIGGER DROP CONSTRAINT T_SCRIPT_FK;
+      DROP INDEX WORKFLOW_TRIGGER.T_SCRIPT_IX;
+      ALTER TABLE WORKFLOW_TRIGGER DROP COLUMN SCRIPT_ID;
+      DELETE FROM HI_LO_SEQ WHERE SEQ_NAME = 'SCRIPT';
+      DROP TABLE SCRIPT;
+    </sql>
+  </change>
+
+  <change number="5">
+    <description>Make templates independent</description>
+    <sql separator=";">
+      ALTER TABLE SOURCE_CONFIG_TEMPLATE ADD RESOURCE_ID VARCHAR(36);
+      ALTER TABLE SOURCE_CONFIG_TEMPLATE DROP CONSTRAINT SCT_NAME_UNIQUE;
+      ALTER TABLE WORKFLOW_TEMPLATE DROP CONSTRAINT WT_NAME_UNIQUE;
+
+      UPDATE sec_resource_type SET name = 'Template' WHERE id = '00000000-0000-0000-0000-000000000021';
+      UPDATE sec_action SET description = 'Ability to view a project, process or source template. This is required to create a project, process or source configuration using the template.'
+      WHERE id = '00000000-0000-0000-0000-000000000082';
+      UPDATE sec_action SET description = 'Ability to edit and delete a project, process or source template.'
+      WHERE id = '00000000-0000-0000-0000-000000000083';
+      UPDATE sec_action SET description = 'Ability to create new project, process and source templates.'
+      WHERE id = '00000000-0000-0000-0000-000000000096';
+    </sql>
+    <groovy file="6.1/ucb_005_independent_templates.groovy"/>
+    <sql separator=";">
+      ALTER TABLE SOURCE_CONFIG_TEMPLATE DROP CONSTRAINT SCT_PROJECT_TEMPLATE_FK;
+      DROP INDEX SOURCE_CONFIG_TEMPLATE.SCT_PROJECT_TEMPLATE_IX;
+      ALTER TABLE SOURCE_CONFIG_TEMPLATE DROP COLUMN PROJECT_TEMPLATE_ID;
+      ALTER TABLE WORKFLOW_TEMPLATE DROP CONSTRAINT WT_PROJECT_TEMPLATE_FK;
+      DROP INDEX WORKFLOW_TEMPLATE.WT_PROJECT_TEMPLATE_IX;
+      ALTER TABLE WORKFLOW_TEMPLATE DROP COLUMN PROJECT_TEMPLATE_ID;
+
+      ALTER TABLE SOURCE_CONFIG_TEMPLATE ADD CONSTRAINT SCT_NAME_UNIQUE UNIQUE(NAME);
+      ALTER TABLE WORKFLOW_TEMPLATE ADD CONSTRAINT WT_NAME_UNIQUE UNIQUE(NAME);
+    </sql>
+    <groovy file="repair_permissions.groovy"/>
+  </change>
+
+  <change number="6">
+    <description>Make jobs independent</description>
+    <sql separator=";">
+      ALTER TABLE JOB_CONFIG DROP CONSTRAINT JC_NAME_UNIQUE;
+
+      insert into sec_resource_type (id, version, name, enabled)
+          values ('00000000-0000-0000-0000-000000000023', 0, 'Job', 'Y');
+      insert into sec_action (id, version, name, description, enabled, cascading, sec_resource_type_id)
+          values ('00000000-0000-0000-0000-000000000106', 0, 'Job View', 'Ability to view a job. This is required to use the job in a workflow. It is not required by users of projects to run build processes and secondary processes.', 'Y', 'N', '00000000-0000-0000-0000-000000000023');
+      insert into sec_action (id, version, name, description, enabled, cascading, sec_resource_type_id)
+          values ('00000000-0000-0000-0000-000000000107', 0, 'Job Edit', 'Ability to edit or delete a job. This is required to edit the job''s steps.', 'Y', 'N', '00000000-0000-0000-0000-000000000023');
+      insert into sec_action (id, version, name, description, enabled, cascading, sec_resource_type_id)
+          values ('00000000-0000-0000-0000-000000000108', 0, 'Job Create', 'Ability to create a job.', 'Y', 'N', '00000000-0000-0000-0000-000000000023');
+    </sql>
+    <groovy file="6.1/ucb_006_independent_jobs.groovy"/>
+    <sql separator=";">
+      ALTER TABLE JOB_CONFIG DROP CONSTRAINT JC_WKFW_DEF_FK;
+      DROP INDEX JOB_CONFIG.JC_WORKFLOW_DEFINITION_IX;
+      ALTER TABLE JOB_CONFIG DROP COLUMN WORKFLOW_DEFINITION_ID;
+
+      ALTER TABLE JOB_CONFIG ADD CONSTRAINT JC_NAME_UNIQUE UNIQUE(NAME);
+    </sql>
+    <groovy file="repair_permissions.groovy"/>
+  </change>
+
+  <change number="7">
+    <description>Update reporting tables for template independence.</description>
+    <sql separator=";">
+      ALTER TABLE PROCESS_TEMPLATE_DIM DROP CONSTRAINT PTD_PROJECT_TEMPLATE_FK;
+      DROP INDEX PROCESS_TEMPLATE_DIM.PTD_PROJECT_TEMPLATE_IX;
+      ALTER TABLE PROCESS_TEMPLATE_DIM DROP COLUMN PROJECT_TEMPLATE;
+      DELETE FROM REP_DIMENSION_COLUMN WHERE PARENT_ID = '00000000-0000-0000-0000-000000000007' AND NAME = 'PROJECT_TEMPLATE';
+    </sql>
+  </change>
+
+  <change number="8">
+    <description>Add parallel execution flag to step history.</description>
+    <sql separator=";">
+      ALTER TABLE JOB_STEP_TRACE ADD PARALLEL_EXEC INT DEFAULT 0 NOT NULL;
+      UPDATE JOB_STEP_TRACE SET PARALLEL_EXEC = 0;
+    </sql>
+  </change>
+
+  <change number="9">
+    <description>Remove the Process Task Run permission.</description>
+    <sql separator=";">
+      DELETE FROM sec_role_action WHERE sec_action_id='00000000-0000-0000-0000-000000000036';
+      DELETE FROM sec_action WHERE id='00000000-0000-0000-0000-000000000036';
+    </sql>
+  </change>
+
+  <change number="10">
+    <description>Update auth_token to sec_auth_token when using air-security auth token</description>
+    <groovy file="6.1/ucb_010_token_migration_to_secauthtoken.groovy"/>
+    <sql separator=";">
+      DROP TABLE AUTH_TOKEN_CONTEXT;
+      DROP TABLE AUTH_TOKEN;
+    </sql>
+  </change>
+
+  <change number="11">
+    <description>Add default reports</description>
+    <groovy file="6.1/ucb_011_add_default_reports.groovy"/>
+  </change>
+
+  <change number="12">
+    <description>Add Notification Subscriptions table</description>
+    <sql separator=";">
+      CREATE TABLE NOTIFICATION_SUBSCRIPTION (
+        ID                  BIGINT NOT NULL PRIMARY KEY,
+        VERSION             BIGINT DEFAULT 0 NOT NULL,
+        USER_ID             BIGINT NOT NULL,
+        SUBSCRIBED_CLASS    NVARCHAR(255) NOT NULL,
+        SUBSCRIBED_ID       BIGINT NOT NULL,
+        EVENT               NVARCHAR(36) NOT NULL,
+        CONSTRAINT NS_USER_CLASS_ID_UC UNIQUE(USER_ID, SUBSCRIBED_CLASS, SUBSCRIBED_ID)
+      );
+
+      ALTER TABLE NOTIFICATION_SUBSCRIPTION ADD CONSTRAINT NS_USER_FK
+        FOREIGN KEY (USER_ID) REFERENCES UBUILD_USER (ID);
+
+      CREATE INDEX NS_SUBSCRIBED_OBJECT_IX ON NOTIFICATION_SUBSCRIPTION(SUBSCRIBED_ID, SUBSCRIBED_CLASS);
+
+      CREATE INDEX NS_USER_IX ON NOTIFICATION_SUBSCRIPTION(USER_ID);
+
+      CREATE INDEX NS_USER_SUBSCRIBED_ID_IX ON NOTIFICATION_SUBSCRIPTION(USER_ID, SUBSCRIBED_ID);
+
+      INSERT INTO HI_LO_SEQ(SEQ_NAME, HI_VAL) VALUES('NOTIFICATION_SUBSCRIPTION', 0);
+    </sql>
+  </change>
+  <change number="13">
+    <description>Add subscription url to notification template</description>
+    <sql>
+      UPDATE TEMPLATE SET DATA = '<![CDATA[<?xml version="1.0" encoding="UTF-8"?>
+<template>
+<name>Simple Process Email Template</name>
+<template-text><![CDATA[## BEGIN SECTION Subject
+
+#set($project = $workflow.Project)
+#set($stamp = $workflow.BuildLife.latestStamp())
+
+Process:
+#if($stamp != "")
+  $project.Name - $workflow.Name ($stamp):
+#else
+  $project.Name - $workflow.Name:
+#end
+
+#if($workflow.Status.equalsIgnoreCase("Complete"))
+  Success
+#else
+  $workflow.Status
+#end
+
+## END SECTION Subject
+
+## BEGIN SECTION Body
+## PROPERTY Content-Type: text/html
+## PROPERTY X-Priority: 3
+
+<!DOCTYPE html PUBLIC "-//W3C//DTD HTML 4.01 Transitional//EN">
+
+<html>
+
+<head>
+<title>Process</title>
+<STYLE TYPE="text/css">
+<!--
+table.data-table td {
+    vertical-align: top;
+}
+
+table.data-table
+{
+    font-family: arial, helvetica, sans-serif;
+    font-size: 12px;
+    background-color: #567596;
+}
+
+table.data-table caption
+{
+    padding-top: 10px;
+    padding-bottom: 10px;
+    text-align: left;
+}
+
+table.data-table th
+{
+    text-align: center;
+    background-color: #cfdbef;
+    height: 25px;
+}
+
+table.data-table td
+{
+    vertical-align: top;
+}
+
+table.data-table tr.odd
+{
+    background-color: #ffffff;
+}
+
+table.data-table tr.even
+{
+    background-color: #f6f6f6;
+}
+
+.data-table-button-bar
+{
+    padding-top: 10px;
+    padding-bottom: 10px;
+}
+
+.data-table-container
+{
+    padding-top: 10px;
+    padding-bottom: 10px;
+}
+-->
+</STYLE>
+</head>
+<body>
+
+<h1> Process: $workflow.Name
+</h1>
+
+
+<div class="data-table-container">
+<table class="data-table" cellpadding="4" cellspacing="1" width="100%">
+ <table-body>
+  <tr class="data-table-head">
+    <th scope="col" align="left" valign="middle"><strong>Job Name</strong></th>
+    <th scope="col" align="left" valign="middle"><strong>Agent Name</strong></th>
+    <th scope="col" align="left" valign="middle">Status</strong></th>
+  </tr>
+  #foreach($trace in $workflow.JobTraceList)
+    <tr bgcolor="#ffffff">
+      <td>$trace.getName()</td>
+      <td align="center">$trace.Agent</td>
+      #set($status = $trace.Status)
+      <td align="center">
+        #if($trace.statusIsSuccess())
+          <strong style="color: green">
+        #elseif($trace.statusIsFailure())
+          <strong style="color: red">
+        #else
+          <strong style="color: blue">
+        #end
+        $status</strong>
+      </td>
+    </tr>
+  #end
+ </table-body>
+</table>
+</div>
+
+<a href="$workflow.Url">Build details</a> | <a href="$util.UserSubscriptionsUrl">Update subscriptions</a>
+
+</body>
+</html>
+
+## END SECTION Body]]]]><![CDATA[></template-text>
+<description>A simple example of a velocity template for creating notification emails for notification service.</description>
+</template>
+]]>' WHERE ID = -1 AND VERSION = 0;;
+
+
+
+      UPDATE TEMPLATE SET DATA = '<![CDATA[<?xml version="1.0" encoding="UTF-8"?>
+<template>
+<name>Build Request Failed Template</name>
+<template-text><![CDATA[## BEGIN SECTION Subject
+
+#set($trace = $request.JobTrace)
+#set($project = $trace.Project)
+
+Request Failed: $project.Name - $request.Workflow.Name
+
+## END SECTION Subject
+
+## BEGIN SECTION Body
+## PROPERTY Content-Type: text/html
+## PROPERTY X-Priority: 3
+
+<!DOCTYPE html PUBLIC "-//W3C//DTD HTML 4.01 Transitional//EN">
+
+#set($trace = $request.JobTrace)
+#set($project = $trace.Project)
+
+<html>
+
+<head>
+<title>Process</title>
+</head>
+<body>
+
+Request Failed: $project.Name - $request.Workflow.Name
+<p>
+
+<a href="$request.Url">Request information</a> | <a href="$util.UserSubscriptionsUrl">Update subscriptions</a>
+
+</body>
+</html>
+
+## END SECTION Body]]]]><![CDATA[></template-text>
+<description>A simple example template to notify users of a failed build request</description>
+</template>
+]]>' WHERE ID = -2 AND VERSION = 0;;
+
+
+
+      UPDATE TEMPLATE SET DATA = '<![CDATA[<?xml version="1.0" encoding="UTF-8" standalone="no"?><template><name>Simple IM Template</name>
+<template-text><![CDATA[## BEGIN SECTION Subject
+
+#set($project = $workflow.Project)
+#set($stamp = $workflow.BuildLife.latestStamp())
+
+Process:
+#if($stamp != "")
+  $project.Name - $workflow.Name ($stamp):
+#else
+  $project.Name - $workflow.Name:
+#end
+
+#if($workflow.Status.equalsIgnoreCase("Complete"))
+  Success
+#else
+  $workflow.Status
+#end
+
+## END SECTION Subject
+
+## BEGIN SECTION Body
+
+#if ( !$workflow )
+#set($workflow = $request.WorkflowCase)
+#end
+#if($workflow.Status.equalsIgnoreCase("Complete"))
+  Success
+#else
+  $workflow.Status
+#end
+#set($project = $workflow.Project)
+#set($stamp = $workflow.BuildLife.latestStamp())
+$project.Name - $workflow.Name #if($stamp != "") ($stamp) #end
+
+Additional information: $workflow.Url
+
+Update subscription preferences: $util.UserSubscriptionsUrl
+
+## END SECTION Body]]]]><![CDATA[></template-text>
+<description>A simple example of a velocity template for creating notification IMs for notification service.</description>
+</template>
+]]>' WHERE ID = -3 AND VERSION = 0;;
+
+
+
+      UPDATE TEMPLATE SET DATA = '<![CDATA[<?xml version="1.0" encoding="UTF-8"?>
+<template>
+<name>Process Email Template With Steps</name>
+<template-text><![CDATA[## BEGIN SECTION Subject
+
+#set($project = $workflow.Project)
+#set($stamp = $workflow.BuildLife.latestStamp())
+
+Process:
+#if($stamp != "")
+  $project.Name - $workflow.Name ($stamp):
+#else
+  $project.Name - $workflow.Name:
+#end
+
+#if($workflow.Status.equalsIgnoreCase("Complete"))
+  Success
+#else
+  $workflow.Status
+#end
+
+## END SECTION Subject
+
+## BEGIN SECTION Body
+## PROPERTY Content-Type: text/html
+## PROPERTY X-Priority: 3
+
+<!DOCTYPE html PUBLIC "-//W3C//DTD HTML 4.01 Transitional//EN">
+
+<html>
+
+<head>
+<title>Process</title>
+<STYLE TYPE="text/css">
+<!--
+table.data-table td {
+    vertical-align: top;
+}
+
+table.data-table
+{
+    font-family: arial, helvetica, sans-serif;
+    font-size: 12px;
+    background-color: #567596;
+}
+
+table.data-table caption
+{
+    padding-top: 10px;
+    padding-bottom: 10px;
+    text-align: left;
+}
+
+table.data-table th
+{
+    text-align: center;
+    background-color: #cfdbef;
+    height: 25px;
+}
+
+table.data-table td
+{
+    vertical-align: top;
+}
+
+table.data-table tr.odd
+{
+    background-color: #ffffff;
+}
+
+table.data-table tr.even
+{
+    background-color: #f6f6f6;
+}
+
+.data-table-button-bar
+{
+    padding-top: 10px;
+    padding-bottom: 10px;
+}
+
+.data-table-container
+{
+    padding-top: 10px;
+    padding-bottom: 10px;
+}
+-->
+</STYLE>
+</head>
+<body>
+
+<h1> Process: $workflow.Name
+</h1>
+
+
+<div class="data-table-container">
+<table class="data-table" cellpadding="4" cellspacing="1" width="100%">
+ <table-body>
+  <tr class="data-table-head">
+    <th scope="col" align="left" valign="middle"><strong>Job Name</strong></th>
+    <th scope="col" align="left" valign="middle"><strong>Agent Name</strong></th>
+    <th scope="col" align="left" valign="middle">Status</strong></th>
+  </tr>
+  #foreach($trace in $workflow.JobTraceList)
+    <tr bgcolor="#ffffff">
+      <td>$trace.Name</td>
+      <td align="center">$trace.Agent</td>
+      #set($status = $trace.Status)
+      <td align="center">
+        #if($trace.statusIsSuccess())
+          <strong style="color: green">
+        #elseif($trace.statusIsFailure())
+          <strong style="color: red">
+        #else
+          <strong style="color: blue">
+        #end
+        $status</strong>
+      </td>
+    </tr>
+
+    #foreach($step in $trace.StepList)
+      <tr bgcolor="#ffffff">
+        <td>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;Step - $step.Name</td>
+        <td align="center">$trace.Agent</td>
+        #set($stepStatus = $step.Status)
+        <td align="center">
+          #if($step.statusIsSuccess())
+            <strong style="color: green">
+          #elseif($step.statusIsFailure())
+            <strong style="color: red">
+          #else
+            <strong style="color: blue">
+          #end
+          $stepStatus</strong>
+        </td>
+      </tr>
+    #end
+  #end
+ </table-body>
+</table>
+</div>
+
+<a href="$workflow.Url">Build details</a> | <a href="$util.UserSubscriptionsUrl">Update subscriptions</a>
+
+</body>
+</html>
+
+## END SECTION Body]]]]><![CDATA[></template-text>
+<description>A simple example of a velocity template for creating notification emails for notification service. This template also includes a listing of steps for each job.</description>
+</template>
+]]>' WHERE ID = -4 AND VERSION = 0;;
+    </sql>
+  </change>
+
+  <change number="14">
+    <description>Add an index on the value of build life properties.</description>
+    <sql separator=";">
+      CREATE INDEX BLP_VALUE
+        ON BUILD_LIFE_PROPS(VALUE ASC);
+    </sql>
+  </change>
+
+  <change number="15">
+    <description>Remove all security around workflow templates.</description>
+    <sql separator=";">
+      DELETE FROM sec_resource_for_team WHERE id IN (
+        SELECT srft.id
+        FROM sec_resource_for_team srft
+        INNER JOIN sec_resource sr ON srft.sec_resource_id = sr.id
+        WHERE sr.sec_resource_type_id = '00000000-0000-0000-0000-000000000011'
+      );
+
+      DELETE FROM sec_role_action WHERE id IN (
+        SELECT sra.id
+        FROM sec_role_action sra
+        INNER JOIN sec_action sa ON sra.sec_action_id = sa.id
+        WHERE sa.sec_resource_type_id = '00000000-0000-0000-0000-000000000011'
+      );
+
+      DELETE FROM sec_action WHERE sec_resource_type_id = '00000000-0000-0000-0000-000000000011';
+
+      DELETE FROM sec_resource WHERE sec_resource_type_id = '00000000-0000-0000-0000-000000000011';
+
+      DELETE FROM sec_resource_role WHERE sec_resource_type_id = '00000000-0000-0000-0000-000000000011';
+
+      DELETE FROM sec_resource_type WHERE id = '00000000-0000-0000-0000-000000000011';
+
+      ALTER TABLE WORKFLOW_DEFINITION DROP COLUMN RESOURCE_ID;
+    </sql>
+  </change>
+
+  <change number="16">
+    <description>Merge process and workflow templates.</description>
+    <groovy file="6.1/ucb_016_merge_process_workflow_templates.groovy"/>
+  </change>
+
+  <change number="17">
+    <description>Remove unused WORKFLOW_DEFINITION_PROPERTY table</description>
+    <sql separator=";">
+      ALTER TABLE WORKFLOW_DEFINITION_PROPERTY DROP CONSTRAINT WDP_WORKFLOW_DEF_FK;
+      DROP TABLE WORKFLOW_DEFINITION_PROPERTY;
+    </sql>
+  </change>
+
+  <change number="18">
+    <description>Remove unused WORKFLOW_DEF_JOB_AGENT table</description>
+    <sql separator=";">
+      ALTER TABLE WORKFLOW_DEF_JOB_AGENT DROP CONSTRAINT WDJA_WF_DEF_JOB_CONFIG_FK;
+      ALTER TABLE WORKFLOW_DEF_JOB_AGENT DROP CONSTRAINT WDJA_AGENT_FK;
+      DROP TABLE WORKFLOW_DEF_JOB_AGENT;
+    </sql>
+  </change>
+
+  <change number="19">
+    <description>Add new permission for manually adding statuses to a build life</description>
+    <sql separator=";">
+      insert into sec_action (id, version, name, description, enabled, cascading, sec_resource_type_id)
+      values ('00000000-0000-0000-0000-000000000071', 0, 'Add Manual Status', 'Ability to add statuses manually to a build life. You only need this action granted by a role. There is no resource that needs to be added to a user''s team. A user can add a status to a build from any project they can view.', 'Y', 'N', '00000000-0000-0000-0000-000000000007');
+      ALTER TABLE BUILD_LIFE_STATUS ADD USER_ID BIGINT;
+    </sql>
+    <groovy file="6.1/ucb_020_add_manual_status_permission.groovy"/>
+  </change>
+
+  <change number="20">
+    <description>Update descriptions for permissions that mentioned workflow.</description>
+    <sql separator=";">
+      update sec_action set description = 'Ability to view, create, and use scripts. This is required for users to view process configurations that use scripts.' where id = '00000000-0000-0000-0000-000000000102';
+      update sec_action set description = 'Ability to view a agent pool and the agents in it. This is required to see processes that have jobs that use the agent pool.' where id = '00000000-0000-0000-0000-000000000072';
+      update sec_action set description = 'Ability to view a job. This is required to use the job in a process definition. It is not required by users of projects to run build processes and secondary processes.' where id = '00000000-0000-0000-0000-000000000106';
+    </sql>
+  </change>
+</change-set>

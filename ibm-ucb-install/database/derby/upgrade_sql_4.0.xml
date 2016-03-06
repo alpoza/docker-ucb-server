@@ -1,0 +1,2348 @@
+<?xml version="1.0"?>
+<!--
+- Licensed Materials - Property of IBM Corp.
+- IBM UrbanCode Build
+- (c) Copyright IBM Corporation 2012, 2014. All Rights Reserved.
+-
+- U.S. Government Users Restricted Rights - Use, duplication or disclosure restricted by
+- GSA ADP Schedule Contract with IBM Corp.
+-->
+
+<change-set release="4.0">
+    <library name="reporting"
+        release="4.0"
+        base-dir="reporting"
+        file="reporting/derby/upgrade_sql_4.0.xml"
+        version-table="REPORT_DB_VERSION"
+        release-column="RELEASE_NAME"
+        version-column="VER"/>
+    />
+    
+    <change number="1">
+        <description>Update repository trigger table.</description>
+        <sql separator=";">
+        ALTER TABLE REPOSITORY_TRIGGER DROP COLUMN CLASS;
+        ALTER TABLE REPOSITORY_TRIGGER DROP COLUMN DATA;
+        </sql>
+    </change>
+    <change number="2">
+        <description>Add default work dir scripts.</description>
+        <sql separator=";">
+        INSERT INTO WORK_DIR_SCRIPT (ID, NAME, DESCRIPTION, PATH, CAN_DELETE, SCRIPT_GROUP_ID)
+        VALUES (-1, 'Default Workflow Directory', '{agent}/var/work/project/{project}/{workflow}',
+            '${env/AGENT_HOME}/var/work/project/${gvy:PathHelper.makeSafe(ProjectLookup.current.name)}/${gvy:PathHelper.makeSafe(WorkflowLookup.current.name)}',
+            1, -1);
+        INSERT INTO WORK_DIR_SCRIPT (ID, NAME, DESCRIPTION, PATH, CAN_DELETE, SCRIPT_GROUP_ID)
+        VALUES (-2, 'Unique Job Directory', '{agent}/var/work/job/{job_id}',
+            '${env/AGENT_HOME}/var/work/job/${gvy:JobTraceLookup.current.id)}',
+            1, -1);
+        </sql>
+    </change>
+    <change number="3">
+        <description>New team-based security.</description>
+        <sql separator=";">
+        ALTER TABLE USER_TASK DROP CONSTRAINT UT_SEC_GROUP_FK;
+
+        DROP TABLE SEC_USER_GROUP;
+        DROP TABLE SEC_DEFAULT_PERMISSION;
+        DROP TABLE SEC_PERMISSION;
+        DROP TABLE SEC_GROUP;
+        DROP TABLE SEC_RESOURCE_HIERARCHY;
+        DROP TABLE SEC_RESOURCE;
+        DROP TABLE SEC_RESOURCE_TYPE;
+        DROP TABLE SEC_ROLE_ACTION;
+        DROP TABLE SEC_ROLE;
+
+        DELETE FROM USER_TASK;
+        ALTER TABLE USER_TASK DROP COLUMN GROUP_ID;
+        ALTER TABLE USER_TASK ADD COLUMN GROUP_ID VARCHAR(36);
+
+        ALTER TABLE SEC_USER DROP CONSTRAINT SU_NAME_UC;
+        ALTER TABLE SEC_USER DROP COLUMN AUTH_REALM_ID;
+        ALTER TABLE SEC_USER DROP COLUMN FIRST_NAME;
+        ALTER TABLE SEC_USER DROP COLUMN LAST_NAME;
+
+        ALTER TABLE ACTIVITY_FILTER DROP CONSTRAINT AF_SEC_USER_FK;
+        ALTER TABLE AUTH_TOKEN DROP CONSTRAINT AT_SEC_USER_ID_FK;
+        ALTER TABLE BUILD_LIFE_LABEL DROP CONSTRAINT BLLABEL_USER_FK;
+        ALTER TABLE BUILD_LIFE_NOTE DROP CONSTRAINT BLN_USER_FK;
+        ALTER TABLE BUILD_LIFE_STAMP DROP CONSTRAINT BLST_SEC_USER_FK;
+        ALTER TABLE BUILD_REQUEST DROP CONSTRAINT BR_USER_FK;
+        ALTER TABLE CODESTATION_BUILD_LIFE_STATUS DROP CONSTRAINT CBLS_USER_FK;
+        ALTER TABLE USER_ANNOUNCEMENT DROP CONSTRAINT UA_SEC_USER_FK;
+        ALTER TABLE USER_REPO_NAME DROP CONSTRAINT URN_SEC_USER_FK;
+        ALTER TABLE USER_TASK DROP CONSTRAINT UT_SEC_USER_FK;
+
+        RENAME TABLE SEC_USER TO UBUILD_USER;
+
+        ALTER TABLE ACTIVITY_FILTER ADD CONSTRAINT AF_UBUILD_USER_FK
+            FOREIGN KEY (USER_ID)
+            REFERENCES UBUILD_USER (ID)
+            ON DELETE CASCADE
+        ;
+        ALTER TABLE AUTH_TOKEN ADD CONSTRAINT AT_UBUILD_USER_FK
+            FOREIGN KEY (USER_ID)
+            REFERENCES UBUILD_USER (ID)
+            ON DELETE CASCADE
+        ;
+        ALTER TABLE BUILD_LIFE_LABEL ADD CONSTRAINT BLLABEL_UBUILD_USER_FK
+            FOREIGN KEY (USER_ID)
+            REFERENCES UBUILD_USER (ID)
+        ;
+        ALTER TABLE BUILD_LIFE_NOTE ADD CONSTRAINT BLN_UBUILD_USER_FK
+            FOREIGN KEY (USER_ID)
+            REFERENCES UBUILD_USER (ID)
+        ;
+        ALTER TABLE BUILD_LIFE_STAMP ADD CONSTRAINT BLST_UBUILD_USER_FK
+            FOREIGN KEY (USER_ID)
+            REFERENCES UBUILD_USER (ID)
+        ;
+        ALTER TABLE BUILD_REQUEST ADD CONSTRAINT BR_UBUILD_USER_FK
+            FOREIGN KEY (USER_ID)
+            REFERENCES UBUILD_USER (ID)
+        ;
+        ALTER TABLE CODESTATION_BUILD_LIFE_STATUS ADD CONSTRAINT CBLS_UBUILD_USER_FK
+            FOREIGN KEY (USER_ID)
+            REFERENCES UBUILD_USER (ID)
+        ;
+        ALTER TABLE USER_ANNOUNCEMENT ADD CONSTRAINT UA_UBUILD_USER_FK
+            FOREIGN KEY (USER_ID)
+            REFERENCES UBUILD_USER (ID)
+            ON DELETE CASCADE
+        ;
+        ALTER TABLE USER_REPO_NAME ADD CONSTRAINT URN_UBUILD_USER_FK
+            FOREIGN KEY (USER_ID)
+            REFERENCES UBUILD_USER (ID)
+            ON DELETE CASCADE
+        ;
+        ALTER TABLE USER_TASK ADD CONSTRAINT UT_UBUILD_USER_FK
+            FOREIGN KEY (USER_ID)
+            REFERENCES UBUILD_USER (ID)
+        ;
+
+        DROP TABLE AUTHENTICATION_REALM;
+        DROP TABLE AUTHORIZATION_REALM;
+
+        ALTER TABLE UBUILD_USER ADD SEC_USER_ID VARCHAR(36);
+        ALTER TABLE UBUILD_USER ADD AUTH_REALM_ID VARCHAR(36);
+        ALTER TABLE UBUILD_USER ADD ACTUAL_NAME VARCHAR(255);
+        CREATE INDEX UU_SEC_USER_IX ON UBUILD_USER(SEC_USER_ID);
+        CREATE INDEX UU_AUTH_REALM_IX ON UBUILD_USER(AUTH_REALM_ID);
+
+        ALTER TABLE BUILD_LIFE DROP CONSTRAINT BL_VERSION_FK;
+        ALTER TABLE BUILD_LIFE DROP COLUMN VERSION_ID;
+
+        ALTER TABLE AGENT ADD COLUMN RESOURCE_ID VARCHAR(36);
+        ALTER TABLE AGENT_RELAY ADD COLUMN RESOURCE_ID VARCHAR(36);
+        ALTER TABLE ARTIFACT_SET ADD COLUMN RESOURCE_ID VARCHAR(36);
+        ALTER TABLE CODESTATION_PROJECT ADD COLUMN RESOURCE_ID VARCHAR(36);
+        ALTER TABLE DISTRIBUTED_SERVER ADD COLUMN RESOURCE_ID VARCHAR(36);
+        ALTER TABLE ENVIRONMENT_GROUP ADD COLUMN RESOURCE_ID VARCHAR(36);
+        ALTER TABLE FOLDER ADD COLUMN RESOURCE_ID VARCHAR(36);
+        ALTER TABLE JOB_CONFIG ADD COLUMN RESOURCE_ID VARCHAR(36);
+        ALTER TABLE LIFE_CYCLE_MODEL ADD COLUMN RESOURCE_ID VARCHAR(36);
+        ALTER TABLE PROJECT ADD COLUMN RESOURCE_ID VARCHAR(36);
+        ALTER TABLE PROJECT_TEMPLATE ADD COLUMN RESOURCE_ID VARCHAR(36);
+        ALTER TABLE REPOSITORY ADD COLUMN RESOURCE_ID VARCHAR(36);
+        ALTER TABLE REQUEST_PLAN ADD COLUMN RESOURCE_ID VARCHAR(36);
+        ALTER TABLE SCRIPT_GROUP ADD COLUMN RESOURCE_ID VARCHAR(36);
+        ALTER TABLE SEC_SYSTEM_FUNCTION ADD COLUMN RESOURCE_ID VARCHAR(36);
+        ALTER TABLE SERVER_GROUP ADD COLUMN RESOURCE_ID VARCHAR(36);
+        ALTER TABLE WORKFLOW ADD COLUMN RESOURCE_ID VARCHAR(36);
+        ALTER TABLE WORKFLOW_DEFINITION ADD COLUMN RESOURCE_ID VARCHAR(36);
+        ALTER TABLE WORKFLOW_TEMPLATE ADD COLUMN RESOURCE_ID VARCHAR(36);
+
+        UPDATE UBUILD_USER SET NAME = 'ubuild' WHERE ID = 4;
+        UPDATE UBUILD_USER SET SEC_USER_ID = '00000000-0000-0000-0000-000000000002' WHERE ID = 3;
+        UPDATE UBUILD_USER SET SEC_USER_ID = '00000000-0000-0000-0000-000000000003' WHERE ID = 4;
+        </sql>
+        <sql file="security/derby/security-schema.ddl" separator=";"/>
+        <sql file="security/foreign-keys.ddl" separator=";"/>
+        <sql file="security/indexes.ddl" separator=";"/>
+        <sql file="security-seed-data.sql" separator=";"/>
+        <groovy file="install_permissions.groovy"/>
+    </change>
+    <change number="4">
+        <description>Remove legacy scripted reports.</description>
+        <sql separator=";">
+        DROP TABLE REPORT;
+        DROP TABLE VELOCITY_REPORT;
+        DELETE FROM HI_LO_SEQ WHERE SEQ_NAME = 'VELOCITY_REPORT';
+        DELETE FROM TEMPLATE WHERE CLASS = 'com.urbancode.anthill3.domain.template.reporting.ReportTemplate';
+
+        DELETE FROM SEC_RESOURCE_ROLE_TO_ACTION WHERE SEC_ACTION_ID = '00000000-0000-0000-0000-000000000042';
+        DELETE FROM SEC_ROLE_ACTION WHERE SEC_ACTION_ID = '00000000-0000-0000-0000-000000000042';
+        DELETE FROM SEC_ACTION WHERE ID = '00000000-0000-0000-0000-000000000042';
+
+        DELETE FROM SEC_RESOURCE_ROLE_TO_ACTION WHERE SEC_ACTION_ID = '00000000-0000-0000-0000-000000000043';
+        DELETE FROM SEC_ROLE_ACTION WHERE SEC_ACTION_ID = '00000000-0000-0000-0000-000000000043';
+        DELETE FROM SEC_ACTION WHERE ID = '00000000-0000-0000-0000-000000000043';
+        </sql>
+    </change>
+    <change number="5">
+        <description>Remove unused job config class and clob.</description>
+        <sql separator=";">
+        ALTER TABLE JOB_CONFIG DROP COLUMN CLASS;
+        ALTER TABLE JOB_CONFIG DROP COLUMN DATA;
+        </sql>
+    </change>
+    <change number="6">
+        <description>Add default resource roles.</description>
+        <sql separator=";">
+
+insert into sec_resource_role (id, version, name, description, enabled, sec_resource_type_id)
+    values('00000000-0000-0000-0000-000000000600', 0, 'Project Read-only', 'Read on Project.', 1, '00000000-0000-0000-0000-000000000004');
+
+insert into sec_resource_role (id, version, name, description, enabled, sec_resource_type_id)
+    values('00000000-0000-0000-0000-000000000602', 0, 'Environment Read-only', 'Read on Environment.', 1, '00000000-0000-0000-0000-000000000006');
+
+insert into sec_resource_role (id, version, name, description, enabled, sec_resource_type_id)
+    values('00000000-0000-0000-0000-000000000603', 0, 'Codestation Read-only', 'Read on Codestation Projects.', 1, '00000000-0000-0000-0000-000000000008');
+
+insert into sec_resource_role (id, version, name, description, enabled, sec_resource_type_id)
+    values('00000000-0000-0000-0000-000000000604', 0, 'Repository Read-only', 'Read on Repositories.', 1, '00000000-0000-0000-0000-000000000009');
+
+insert into sec_resource_role (id, version, name, description, enabled, sec_resource_type_id)
+    values('00000000-0000-0000-0000-000000000605', 0, 'Folder Read-only', 'Read on Folder.', 1, '00000000-0000-0000-0000-000000000010');
+
+insert into sec_resource_role (id, version, name, description, enabled, sec_resource_type_id)
+    values('00000000-0000-0000-0000-000000000606', 0, 'Workflow Read-only', 'Read on Library Workflows.', 1, '00000000-0000-0000-0000-000000000011');
+
+insert into sec_resource_role (id, version, name, description, enabled, sec_resource_type_id)
+    values('00000000-0000-0000-0000-000000000607', 0, 'Job Read-only', 'Read on Library Jobs.', 1, '00000000-0000-0000-0000-000000000012');
+
+insert into sec_resource_role (id, version, name, description, enabled, sec_resource_type_id)
+    values('00000000-0000-0000-0000-000000000608', 0, 'Script Group Read-only', 'Read on Script Group.', 1, '00000000-0000-0000-0000-000000000013');
+
+insert into sec_resource_role (id, version, name, description, enabled, sec_resource_type_id)
+    values('00000000-0000-0000-0000-000000000609', 0, 'Agent Read-only', 'Read on agent.', 1, '00000000-0000-0000-0000-000000000014');
+
+insert into sec_resource_role (id, version, name, description, enabled, sec_resource_type_id)
+    values('00000000-0000-0000-0000-000000000610', 0, 'LCM Read-only', 'Read on lcm.', 1, '00000000-0000-0000-0000-000000000015');
+
+insert into sec_resource_role (id, version, name, description, enabled, sec_resource_type_id)
+    values('00000000-0000-0000-0000-000000000611', 0, 'Request Plan Read-only', 'Read on request plan.', 1, '00000000-0000-0000-0000-000000000020');
+
+insert into sec_resource_role (id, version, name, description, enabled, sec_resource_type_id)
+    values('00000000-0000-0000-0000-000000000612', 0, 'Template Read-only', 'Read on project template.', 1, '00000000-0000-0000-0000-000000000021');
+
+
+insert into sec_resource_role_to_action (sec_resource_role_id, sec_action_id)
+    values('00000000-0000-0000-0000-000000000600', '00000000-0000-0000-0000-000000000032');
+
+insert into sec_resource_role_to_action (sec_resource_role_id, sec_action_id)
+    values('00000000-0000-0000-0000-000000000602', '00000000-0000-0000-0000-000000000072');
+
+insert into sec_resource_role_to_action (sec_resource_role_id, sec_action_id)
+    values('00000000-0000-0000-0000-000000000603', '00000000-0000-0000-0000-000000000089');
+
+insert into sec_resource_role_to_action (sec_resource_role_id, sec_action_id)
+    values('00000000-0000-0000-0000-000000000604', '00000000-0000-0000-0000-000000000039');
+
+insert into sec_resource_role_to_action (sec_resource_role_id, sec_action_id)
+    values('00000000-0000-0000-0000-000000000605', '00000000-0000-0000-0000-000000000022');
+
+insert into sec_resource_role_to_action (sec_resource_role_id, sec_action_id)
+    values('00000000-0000-0000-0000-000000000606', '00000000-0000-0000-0000-000000000028');
+
+insert into sec_resource_role_to_action (sec_resource_role_id, sec_action_id)
+    values('00000000-0000-0000-0000-000000000607', '00000000-0000-0000-0000-000000000025');
+
+insert into sec_resource_role_to_action (sec_resource_role_id, sec_action_id)
+    values('00000000-0000-0000-0000-000000000608', '00000000-0000-0000-0000-000000000052');
+
+insert into sec_resource_role_to_action (sec_resource_role_id, sec_action_id)
+    values('00000000-0000-0000-0000-000000000609', '00000000-0000-0000-0000-000000000076');
+
+insert into sec_resource_role_to_action (sec_resource_role_id, sec_action_id)
+    values('00000000-0000-0000-0000-000000000610', '00000000-0000-0000-0000-000000000056');
+
+insert into sec_resource_role_to_action (sec_resource_role_id, sec_action_id)
+    values('00000000-0000-0000-0000-000000000611', '00000000-0000-0000-0000-000000000079');
+
+insert into sec_resource_role_to_action (sec_resource_role_id, sec_action_id)
+    values('00000000-0000-0000-0000-000000000612', '00000000-0000-0000-0000-000000000082');
+        </sql>
+    </change>
+    <change number="7">
+        <description>Add unique name constraints</description>
+        <sql separator=";">
+ALTER TABLE WORKFLOW_TEMPLATE ADD CONSTRAINT WT_NAME_UNIQUE UNIQUE(NAME, PROJECT_TEMPLATE_ID);
+
+ALTER TABLE WORKFLOW ADD CONSTRAINT W_NAME_UNIQUE UNIQUE(NAME, PROJECT_ID);
+
+ALTER TABLE JOB_CONFIG ADD CONSTRAINT JC_NAME_UNIQUE UNIQUE(NAME, PROJECT_ID);
+
+ALTER TABLE PROJECT ADD CONSTRAINT P_NAME_UNIQUE UNIQUE(NAME);
+
+ALTER TABLE PROJECT_TEMPLATE ADD CONSTRAINT PT_NAME_UNIQUE UNIQUE(NAME);
+
+ALTER TABLE CODESTATION_PROJECT ADD CONSTRAINT CSP_NAME_UNIQUE UNIQUE(NAME);
+
+ALTER TABLE SOURCE_CONFIG_TEMPLATE ADD CONSTRAINT SCT_NAME_UNIQUE UNIQUE(NAME, PROJECT_TEMPLATE_ID);
+        </sql>
+    </change>
+    <change number="8">
+        <description>Add support for multiple source configs.</description>
+        <sql separator=";">
+        ALTER TABLE SOURCE_CONFIG DROP CONSTRAINT SC_PROJECT_FK;
+        ALTER TABLE SOURCE_CONFIG DROP COLUMN PROJECT_ID;
+        ALTER TABLE SOURCE_CONFIG ADD COLUMN BUILD_PROFILE_ID BIGINT;
+        ALTER TABLE SOURCE_CONFIG ADD COLUMN SEQ NUMERIC;
+        
+        UPDATE SOURCE_CONFIG SET BUILD_PROFILE_ID =
+        (SELECT ID FROM BUILD_PROFILE WHERE BUILD_PROFILE.SOURCE_CONFIG_ID = SOURCE_CONFIG.ID);
+        UPDATE SOURCE_CONFIG SET SEQ = 0;
+        
+        ALTER TABLE SOURCE_CONFIG ALTER COLUMN SEQ NOT NULL;
+        
+        ALTER TABLE BUILD_PROFILE DROP CONSTRAINT BP_SOURCE_CONFIG_FK;
+        ALTER TABLE BUILD_PROFILE DROP COLUMN SOURCE_CONFIG_ID;
+        
+        CREATE INDEX SC_BUILD_PROFILE_IX
+            ON SOURCE_CONFIG(BUILD_PROFILE_ID);
+        ALTER TABLE SOURCE_CONFIG ADD CONSTRAINT SC_BUILD_PROFILE_FK
+            FOREIGN KEY (BUILD_PROFILE_ID)
+            REFERENCES BUILD_PROFILE (ID)
+        ;
+        </sql>
+    </change>
+    <change number="9">
+        <description>Add support for multiple source configs.</description>
+        <groovy file="4.0/009_update_source_plugin_steps.groovy"/>
+        <sql separator=";">
+        UPDATE JOB_CONFIG_STEP SET CLASS = 'com.urbancode.anthill3.domain.source.plugin.CleanupSourcePluginMetaStepConfig'
+        WHERE CLASS = 'com.urbancode.anthill3.domain.source.plugin.PluginCleanupStepConfig';
+        UPDATE JOB_CONFIG_STEP SET CLASS = 'com.urbancode.anthill3.domain.source.plugin.GetChangelogSourcePluginMetaStepConfig'
+        WHERE CLASS = 'com.urbancode.anthill3.domain.source.plugin.PluginGetChangelogStepConfig';
+        UPDATE JOB_CONFIG_STEP SET CLASS = 'com.urbancode.anthill3.domain.source.plugin.LabelSourcePluginMetaStepConfig'
+        WHERE CLASS = 'com.urbancode.anthill3.domain.source.plugin.PluginLabelpStepConfig';
+        UPDATE JOB_CONFIG_STEP SET CLASS = 'com.urbancode.anthill3.domain.source.plugin.PopulateWorkspaceSourcePluginMetaStepConfig'
+        WHERE CLASS = 'com.urbancode.anthill3.domain.source.plugin.PluginPopulateWorkspaceStepConfig';
+        </sql>
+    </change>
+    <change number="10">
+        <description>Move non-instance security actions to the resource types they apply to.</description>
+        <sql separator=";">
+        -- delete Repository Administration
+        delete from sec_resource_role_to_action where sec_action_id = '00000000-0000-0000-0000-000000000038';
+        delete from sec_role_action where sec_action_id = '00000000-0000-0000-0000-000000000038';
+        delete from sec_action where id = '00000000-0000-0000-0000-000000000038';
+        
+        -- delete Notification Administration
+        delete from sec_resource_role_to_action where sec_action_id = '00000000-0000-0000-0000-000000000045';
+        delete from sec_role_action where sec_action_id = '00000000-0000-0000-0000-000000000045';
+        delete from sec_action where id = '00000000-0000-0000-0000-000000000045';
+        
+        -- delete Schedule Administration
+        delete from sec_resource_role_to_action where sec_action_id = '00000000-0000-0000-0000-000000000046';
+        delete from sec_role_action where sec_action_id = '00000000-0000-0000-0000-000000000046';
+        delete from sec_action where id = '00000000-0000-0000-0000-000000000046';
+        
+        -- delete Stamp Administration
+        delete from sec_resource_role_to_action where sec_action_id = '00000000-0000-0000-0000-000000000048';
+        delete from sec_role_action where sec_action_id = '00000000-0000-0000-0000-000000000048';
+        delete from sec_action where id = '00000000-0000-0000-0000-000000000048';
+        
+        -- delete Integration Administration
+        delete from sec_resource_role_to_action where sec_action_id = '00000000-0000-0000-0000-000000000049';
+        delete from sec_role_action where sec_action_id = '00000000-0000-0000-0000-000000000049';
+        delete from sec_action where id = '00000000-0000-0000-0000-000000000049';
+        
+        -- delete Server Administration
+        delete from sec_resource_role_to_action where sec_action_id = '00000000-0000-0000-0000-000000000050';
+        delete from sec_role_action where sec_action_id = '00000000-0000-0000-0000-000000000050';
+        delete from sec_action where id = '00000000-0000-0000-0000-000000000050';
+        
+        -- delete Script Administration
+        delete from sec_resource_role_to_action where sec_action_id = '00000000-0000-0000-0000-000000000051';
+        delete from sec_role_action where sec_action_id = '00000000-0000-0000-0000-000000000051';
+        delete from sec_action where id = '00000000-0000-0000-0000-000000000051';
+        
+        -- delete Life-Cycle Model Administration
+        delete from sec_resource_role_to_action where sec_action_id = '00000000-0000-0000-0000-000000000055';
+        delete from sec_role_action where sec_action_id = '00000000-0000-0000-0000-000000000055';
+        delete from sec_action where id = '00000000-0000-0000-0000-000000000055';
+        
+        -- delete Life-Cycle Model View
+        delete from sec_resource_role_to_action where sec_action_id = '00000000-0000-0000-0000-000000000056';
+        delete from sec_role_action where sec_action_id = '00000000-0000-0000-0000-000000000056';
+        delete from sec_action where id = '00000000-0000-0000-0000-000000000056';
+        
+        -- delete Life-Cycle Model Edit
+        delete from sec_resource_role_to_action where sec_action_id = '00000000-0000-0000-0000-000000000057';
+        delete from sec_role_action where sec_action_id = '00000000-0000-0000-0000-000000000057';
+        delete from sec_action where id = '00000000-0000-0000-0000-000000000057';
+
+        -- delete Environment Administration
+        delete from sec_resource_role_to_action where sec_action_id = '00000000-0000-0000-0000-000000000071';
+        delete from sec_role_action where sec_action_id = '00000000-0000-0000-0000-000000000071';
+        delete from sec_action where id = '00000000-0000-0000-0000-000000000071';
+
+        -- delete Agent View
+        delete from sec_resource_role_to_action where sec_action_id = '00000000-0000-0000-0000-000000000076';
+        delete from sec_role_action where sec_action_id = '00000000-0000-0000-0000-000000000076';
+        delete from sec_action where id = '00000000-0000-0000-0000-000000000076';
+
+        -- delete Agent Edit
+        delete from sec_resource_role_to_action where sec_action_id = '00000000-0000-0000-0000-000000000077';
+        delete from sec_role_action where sec_action_id = '00000000-0000-0000-0000-000000000077';
+        delete from sec_action where id = '00000000-0000-0000-0000-000000000077';
+
+        -- insert the Security resource type
+        insert into sec_resource_type (id, version, name, enabled)
+        values ('00000000-0000-0000-0000-000000100022', 0, 'Security', 1);
+
+        -- move System Administration to type Security
+        UPDATE SEC_ACTION SET SEC_RESOURCE_TYPE_ID = '00000000-0000-0000-0000-000000100022'
+        WHERE ID = '00000000-0000-0000-0000-000000000037';
+        
+        -- move Repository Administration to type Repository
+        UPDATE SEC_ACTION SET SEC_RESOURCE_TYPE_ID = '00000000-0000-0000-0000-000000000009'
+        WHERE ID = '00000000-0000-0000-0000-000000000038';
+
+        -- move Audit Administration to type Security
+        UPDATE SEC_ACTION SET SEC_RESOURCE_TYPE_ID = '00000000-0000-0000-0000-000000100022'
+        WHERE ID = '00000000-0000-0000-0000-000000000044';
+
+        -- move Security Administration to type Security
+        UPDATE SEC_ACTION SET SEC_RESOURCE_TYPE_ID = '00000000-0000-0000-0000-000000100022'
+        WHERE ID = '00000000-0000-0000-0000-000000000047';
+
+        -- move Artifact Download to type Project
+        UPDATE SEC_ACTION SET SEC_RESOURCE_TYPE_ID = '00000000-0000-0000-0000-000000000004',
+        NAME = 'Artifact Download'
+        WHERE ID = '00000000-0000-0000-0000-000000000059';
+
+        -- move Restart Workflow to type Workflow
+        UPDATE SEC_ACTION SET SEC_RESOURCE_TYPE_ID = '00000000-0000-0000-0000-000000000007',
+        NAME = 'Workflow Restart'
+        WHERE ID = '00000000-0000-0000-0000-000000000067';
+
+        -- move Prioritize Workflow to type Workflow
+        UPDATE SEC_ACTION SET SEC_RESOURCE_TYPE_ID = '00000000-0000-0000-0000-000000000007',
+        NAME = 'Workflow Prioritize'
+        WHERE ID = '00000000-0000-0000-0000-000000000068';
+
+        -- move Delete History to type Workflow
+        UPDATE SEC_ACTION SET SEC_RESOURCE_TYPE_ID = '00000000-0000-0000-0000-000000000007'
+        WHERE ID = '00000000-0000-0000-0000-000000000069';
+
+        -- move Add Manual Stamp to type Workflow
+        UPDATE SEC_ACTION SET SEC_RESOURCE_TYPE_ID = '00000000-0000-0000-0000-000000000007'
+        WHERE ID = '00000000-0000-0000-0000-000000000070';
+        
+        -- delete the System Function resource type
+        delete from sec_resource_for_team where sec_resource_id in (
+            select id from sec_resource where sec_resource_type_id = '00000000-0000-0000-0000-000000000005');
+        delete from sec_resource_role where sec_resource_type_id = '00000000-0000-0000-0000-000000000005';
+        delete from sec_resource where sec_resource_type_id = '00000000-0000-0000-0000-000000000005';
+        delete from sec_resource_type where id = '00000000-0000-0000-0000-000000000005';
+        
+        -- delete the Agent resource type
+        delete from sec_resource_for_team where sec_resource_id in (
+            select id from sec_resource where sec_resource_type_id = '00000000-0000-0000-0000-000000000014');
+        delete from sec_resource_role where sec_resource_type_id = '00000000-0000-0000-0000-000000000014';
+        delete from sec_resource where sec_resource_type_id = '00000000-0000-0000-0000-000000000014';
+        delete from sec_resource_type where id = '00000000-0000-0000-0000-000000000014';
+        
+        -- delete the Life-Cycle Model resource type
+        delete from sec_resource_for_team where sec_resource_id in (
+            select id from sec_resource where sec_resource_type_id = '00000000-0000-0000-0000-000000000015');
+        delete from sec_resource_role where sec_resource_type_id = '00000000-0000-0000-0000-000000000015';
+        delete from sec_resource where sec_resource_type_id = '00000000-0000-0000-0000-000000000015';
+        delete from sec_resource_type where id = '00000000-0000-0000-0000-000000000015';
+        
+        -- delete the Artifact Set resource type
+        delete from sec_resource_for_team where sec_resource_id in (
+            select id from sec_resource where sec_resource_type_id = '00000000-0000-0000-0000-000000000019');
+        delete from sec_resource_role where sec_resource_type_id = '00000000-0000-0000-0000-000000000019';
+        delete from sec_resource where sec_resource_type_id = '00000000-0000-0000-0000-000000000019';
+        delete from sec_resource_type where id = '00000000-0000-0000-0000-000000000019';
+        
+        -- delete Workflow Template resources
+        delete from sec_resource_for_team where sec_resource_id in (select resource_id from workflow_template);
+        delete from sec_resource where id in (select resource_id from workflow_template);
+        
+        alter table agent drop column resource_id;
+        alter table artifact_set drop column resource_id;
+        alter table life_cycle_model drop column resource_id;
+        alter table workflow_template drop column resource_id;
+        
+        insert into sec_action (id, version, name, description, enabled, cascading, sec_resource_type_id)
+        values ('00000000-0000-0000-0000-000000000091', 0, 'Project Create', null, 1, 0, '00000000-0000-0000-0000-000000000004');
+    
+        insert into sec_action (id, version, name, description, enabled, cascading, sec_resource_type_id)
+        values ('00000000-0000-0000-0000-000000000092', 0, 'Codestation Create', null, 1, 0, '00000000-0000-0000-0000-000000000008');
+    
+        insert into sec_action (id, version, name, description, enabled, cascading, sec_resource_type_id)
+        values ('00000000-0000-0000-0000-000000000093', 0, 'Repository Create', null, 1, 0, '00000000-0000-0000-0000-000000000009');
+    
+        insert into sec_action (id, version, name, description, enabled, cascading, sec_resource_type_id)
+        values ('00000000-0000-0000-0000-000000000094', 0, 'Workflow Create', null, 1, 0, '00000000-0000-0000-0000-000000000011');
+    
+        insert into sec_action (id, version, name, description, enabled, cascading, sec_resource_type_id)
+        values ('00000000-0000-0000-0000-000000000095', 0, 'Scripts Create', null, 1, 0, '00000000-0000-0000-0000-000000000013');
+    
+        insert into sec_action (id, version, name, description, enabled, cascading, sec_resource_type_id)
+        values ('00000000-0000-0000-0000-000000000096', 0, 'Template Create', null, 1, 0, '00000000-0000-0000-0000-000000000021');
+
+        insert into sec_action (id, version, name, description, enabled, cascading, sec_resource_type_id)
+        values ('00000000-0000-0000-0000-000000000097', 0, 'Codestation Download', null, 1, 0, '00000000-0000-0000-0000-000000000008');
+        
+        insert into sec_action (id, version, name, description, enabled, cascading, sec_resource_type_id)
+        values ('00000000-0000-0000-0000-000000000098', 0, 'Team User Management', null, 1, 0, '00000000-0000-0000-0000-000000100022');
+    
+        insert into sec_action (id, version, name, description, enabled, cascading, sec_resource_type_id)
+        values ('00000000-0000-0000-0000-000000000099', 0, 'Team Resource Management', null, 1, 0, '00000000-0000-0000-0000-000000100022');
+        
+        update sec_resource_role set name = 'Script Group Read-only' where id = '00000000-0000-0000-0000-000000000608';
+        </sql>
+        <groovy file="repair_permissions.groovy"/>
+    </change>
+    <change number="100">
+       <description>Drop Stamp Style info from bl and steps</description>
+       <sql separator=";">
+ALTER TABLE BUILD_LIFE_STAMP DROP CONSTRAINT BLST_STAMP_STYLE_FK;
+ALTER TABLE JOB_CONFIG_STEP DROP CONSTRAINT JCS_STAMP_STYLE_FK;
+ALTER TABLE BUILD_LIFE_STAMP DROP COLUMN STAMP_STYLE_ID;
+ALTER TABLE JOB_CONFIG_STEP DROP COLUMN STAMP_STYLE_ID;
+ALTER TABLE JOB_CONFIG_STEP ADD COLUMN STAMP VARCHAR(4000);
+      </sql>
+    </change>
+
+    <change number="101">
+       <description>Drop all stamp configuration other than the stamp step.</description>
+       <sql separator=";">
+ALTER TABLE LIFE_CYCLE_MODEL DROP CONSTRAINT LCM_STAMP_STYLE_GROUP_FK;
+ALTER TABLE PROFILE_STAMP_GENERATOR DROP CONSTRAINT PSG_PROFILE_FK;
+ALTER TABLE PROFILE_STAMP_GENERATOR DROP CONSTRAINT PSG_STAMP_STYLE_FK;
+ALTER TABLE PROFILE_STAMP_GENERATOR DROP CONSTRAINT PSG_STAMP_CONTEXT_SCRIPT_FK;
+ALTER TABLE STAMP_CONTEXT_SCRIPT DROP CONSTRAINT SCS_SCRIPT_GROUP_FK;
+ALTER TABLE STAMP_STYLE DROP CONSTRAINT SS_STYLE_GROUP_FK;
+
+ALTER TABLE LIFE_CYCLE_MODEL DROP COLUMN STAMP_STYLE_GROUP_ID;
+DROP TABLE PROFILE_STAMP_GENERATOR;
+DROP TABLE STAMP_CONTEXT_SCRIPT;
+DROP TABLE STAMP_STYLE;
+DROP TABLE STAMP_STYLE_GROUP;
+      </sql>
+    </change>
+
+    <change number="102">
+       <description>Remove folders.</description>
+       <sql separator=";">
+ALTER TABLE CODESTATION_PROJECT DROP CONSTRAINT CP_FOLDER_FK;
+ALTER TABLE FOLDER DROP CONSTRAINT F_FOLDER_FK;
+ALTER TABLE JOB_CONFIG DROP CONSTRAINT JC_FOLDER_FK;
+ALTER TABLE PROJECT DROP CONSTRAINT P_FOLDER_FK;
+ALTER TABLE PROJECT_TEMPLATE DROP CONSTRAINT PT_FOLDER_FK;
+ALTER TABLE WORKFLOW_DEFINITION DROP CONSTRAINT WD_FOLDER_FK;
+
+DROP INDEX CP_FOLDER_IX;
+DROP INDEX F_FOLDER_IX;
+DROP INDEX JC_FOLDER_IX;
+DROP INDEX P_FOLDER_IX;
+DROP INDEX PT_FOLDER_IX;
+DROP INDEX WD_FOLDER_IX;
+
+DROP TABLE FOLDER;
+
+ALTER TABLE CODESTATION_PROJECT DROP COLUMN FOLDER_ID;
+ALTER TABLE JOB_CONFIG DROP COLUMN FOLDER_ID;
+ALTER TABLE PROJECT DROP COLUMN FOLDER_ID;
+ALTER TABLE PROJECT_TEMPLATE DROP COLUMN FOLDER_ID;
+ALTER TABLE WORKFLOW_DEFINITION DROP COLUMN FOLDER_ID;
+
+DELETE FROM SEC_RESOURCE_ROLE_TO_ACTION WHERE SEC_ACTION_ID = '00000000-0000-0000-0000-000000000022';
+DELETE FROM SEC_ROLE_ACTION WHERE SEC_ACTION_ID = '00000000-0000-0000-0000-000000000022';
+DELETE FROM SEC_ACTION WHERE ID = '00000000-0000-0000-0000-000000000022';
+
+DELETE FROM SEC_RESOURCE_ROLE_TO_ACTION WHERE SEC_ACTION_ID = '00000000-0000-0000-0000-000000000023';
+DELETE FROM SEC_ROLE_ACTION WHERE SEC_ACTION_ID = '00000000-0000-0000-0000-000000000023';
+DELETE FROM SEC_ACTION WHERE ID = '00000000-0000-0000-0000-000000000023';
+
+        DELETE FROM SEC_RESOURCE_FOR_TEAM WHERE SEC_RESOURCE_ID in (
+            SELECT ID FROM SEC_RESOURCE WHERE SEC_RESOURCE_TYPE_ID = '00000000-0000-0000-0000-000000000010'
+        );
+        DELETE FROM SEC_ROLE_ACTION WHERE SEC_RESOURCE_ROLE_ID IN (
+            SELECT ID FROM SEC_RESOURCE_ROLE WHERE SEC_RESOURCE_TYPE_ID = '00000000-0000-0000-0000-000000000010'
+        );
+        DELETE FROM SEC_ROLE_ACTION WHERE SEC_ACTION_ID IN (
+            SELECT ID FROM SEC_ACTION WHERE SEC_RESOURCE_TYPE_ID = '00000000-0000-0000-0000-000000000010'
+        );
+        DELETE FROM SEC_RESOURCE_FOR_TEAM WHERE SEC_RESOURCE_ID IN (
+            SELECT ID FROM SEC_RESOURCE WHERE SEC_RESOURCE_TYPE_ID = '00000000-0000-0000-0000-000000000010'
+        );
+        DELETE FROM SEC_RESOURCE_ROLE_TO_ACTION WHERE SEC_RESOURCE_ROLE_ID IN (
+            SELECT ID FROM SEC_RESOURCE_ROLE WHERE SEC_RESOURCE_TYPE_ID = '00000000-0000-0000-0000-000000000010'
+        );
+        DELETE FROM SEC_RESOURCE_ROLE WHERE SEC_RESOURCE_TYPE_ID = '00000000-0000-0000-0000-000000000010';
+        DELETE FROM SEC_RESOURCE WHERE SEC_RESOURCE_TYPE_ID = '00000000-0000-0000-0000-000000000010';
+        DELETE FROM SEC_ACTION WHERE SEC_RESOURCE_TYPE_ID = '00000000-0000-0000-0000-000000000010';
+        DELETE FROM SEC_RESOURCE_TYPE WHERE ID ='00000000-0000-0000-0000-000000000010';
+      </sql>
+    </change>
+    <change number="103">
+       <description>Make library jobs part of library workflows.</description>
+       <sql separator=";">
+ALTER TABLE JOB_CONFIG ADD COLUMN WORKFLOW_DEFINITION_ID BIGINT;
+
+ALTER TABLE JOB_CONFIG ADD CONSTRAINT JC_WKFW_DEF_FK
+    FOREIGN KEY (WORKFLOW_DEFINITION_ID)
+    REFERENCES WORKFLOW_DEFINITION (ID)
+;
+      </sql>
+      <groovy file="4.0/103_move_library_jobs.groovy"/>
+      <groovy file="repair_permissions.groovy"/>
+    </change>
+    
+    <change number="104">
+       <description>Null out post process scripts in the JOB_CONFIG_STEP table.</description>
+       <sql separator=";">
+         UPDATE JOB_CONFIG_STEP SET POST_PROCESS_SCRIPT_ID = NULL WHERE ID IS NOT NULL
+       </sql>
+    </change>
+    <change number="105">
+       <description>Remove existing post-processing scripts</description>
+       <sql separator=";">
+        DELETE FROM POST_PROCESS_SCRIPT WHERE ID IS NOT NULL
+      </sql>
+    </change>
+    <change number="106">
+        <description>Remove env groups.</description>
+        <sql separator=";">
+        ALTER TABLE ENVIRONMENT_SERVER_GROUP DROP CONSTRAINT ESG_ENVIRONMENT_GROUP_FK;
+        ALTER TABLE ENVIRONMENT_SERVER_GROUP DROP CONSTRAINT ESG_SERVER_GROUP_FK;
+        DROP TABLE ENVIRONMENT_SERVER_GROUP;
+        
+        ALTER TABLE PROJECT DROP CONSTRAINT P_ENVIRONMENT_GROUP;
+        ALTER TABLE PROJECT DROP COLUMN ENVIRONMENT_GROUP_ID;
+        
+        DROP TABLE ENVIRONMENT_GROUP;
+        
+        DELETE FROM SEC_ROLE_ACTION WHERE SEC_ACTION_ID = '00000000-0000-0000-0000-000000000085';
+        DELETE FROM SEC_ROLE_ACTION WHERE SEC_ACTION_ID = '00000000-0000-0000-0000-000000000086';
+        DELETE FROM SEC_RESOURCE_FOR_TEAM WHERE SEC_RESOURCE_ID IN (
+            SELECT ID FROM SEC_RESOURCE WHERE SEC_RESOURCE_TYPE_ID = '00000000-0000-0000-0000-000000000016'
+        );
+        DELETE FROM SEC_ACTION WHERE SEC_RESOURCE_TYPE_ID = '00000000-0000-0000-0000-000000000016';
+        DELETE FROM SEC_RESOURCE WHERE SEC_RESOURCE_TYPE_ID = '00000000-0000-0000-0000-000000000016';
+        DELETE FROM SEC_RESOURCE_TYPE WHERE ID = '00000000-0000-0000-0000-000000000016';
+        </sql>
+    </change>
+    <change number="107">
+        <description>Refactor Environments to Agent Pools (Removes Environments, Environment Groups,
+        and changes how Agent Filters are implemented)</description>
+        <sql separator=";">
+        DROP TABLE PROJECT_ENV_PROP;
+        DROP TABLE SERVER_GROUP_PROPERTY;
+        DROP TABLE WORKFLOW_SERVER_GROUP;
+
+        ALTER TABLE BUILD_REQUEST DROP CONSTRAINT BR_SERVER_GROUP_FK;
+        ALTER TABLE SERVER_GROUP_ENDPOINTS DROP CONSTRAINT SGE_SERVER_GROUP_FK;
+        ALTER TABLE WORKFLOW_CASE DROP CONSTRAINT WC_SERVER_GROUP_FK;
+        ALTER TABLE WORKFLOW_TRIGGER DROP CONSTRAINT T_SERVER_GROUP_FK;
+        
+        ALTER TABLE SERVER_GROUP DROP COLUMN SHORT_NAME;
+
+        RENAME COLUMN BUILD_REQUEST.SERVER_GROUP_ID TO AGENT_POOL_ID;
+        RENAME COLUMN BUILD_WORKFLOW_SUMMARY.SERVER_GROUP_ID TO AGENT_POOL_ID;
+        RENAME COLUMN SERVER_GROUP_ENDPOINTS.SERVER_GROUP_ID TO AGENT_POOL_ID;
+        RENAME COLUMN WORKFLOW_CASE.SERVER_GROUP_ID TO AGENT_POOL_ID;
+        RENAME COLUMN WORKFLOW_TRIGGER.SERVER_GROUP_ID TO AGENT_POOL_ID;
+        
+        RENAME TABLE SERVER_GROUP TO AGENT_POOL;
+        RENAME TABLE SERVER_GROUP_ENDPOINTS TO AGENT_POOL_ENDPOINTS;
+        
+        ALTER TABLE BUILD_REQUEST ADD CONSTRAINT BR_AGENT_POOL_FK
+            FOREIGN KEY (AGENT_POOL_ID)
+            REFERENCES AGENT_POOL (ID)
+        ;
+        ALTER TABLE AGENT_POOL_ENDPOINTS ADD CONSTRAINT APE_AGENT_POOL_FK
+            FOREIGN KEY (AGENT_POOL_ID)
+            REFERENCES AGENT_POOL (ID)
+        ;
+        ALTER TABLE WORKFLOW_CASE ADD CONSTRAINT WC_AGENT_POOL_FK
+            FOREIGN KEY (AGENT_POOL_ID)
+            REFERENCES AGENT_POOL (ID)
+        ;
+        ALTER TABLE WORKFLOW_TRIGGER ADD CONSTRAINT T_AGENT_POOL_FK
+            FOREIGN KEY (AGENT_POOL_ID)
+            REFERENCES AGENT_POOL (ID)
+        ;
+        
+        UPDATE HI_LO_SEQ SET SEQ_NAME='AGENT_POOL' WHERE SEQ_NAME='SERVER_GROUP';
+        UPDATE SEC_ACTION SET NAME='Agent Pool View' WHERE ID='00000000-0000-0000-0000-000000000072';
+        UPDATE SEC_ACTION SET NAME='Agent Pool Edit' WHERE ID='00000000-0000-0000-0000-000000000073';
+        UPDATE SEC_ACTION SET NAME='Agent Pool Use' WHERE ID='00000000-0000-0000-0000-000000000074';
+        UPDATE SEC_RESOURCE_TYPE SET NAME='Agent Pool' WHERE ID='00000000-0000-0000-0000-000000000006';
+
+        ALTER TABLE WORKFLOW_DEFINITION_JOB_CONFIG DROP CONSTRAINT WDJC_AGENT_FILTER_SCRIPT_FK;
+        ALTER TABLE WORKFLOW_DEFINITION_JOB_CONFIG DROP COLUMN ANY_AGENT;
+        DROP INDEX WDJC_AGENT_FILTER_SCRIPT_IX;
+
+        ALTER TABLE PROJECT DROP CONSTRAINT P_AGENT_FILTER_SCRIPT_FK;
+        ALTER TABLE PROJECT DROP COLUMN AGENT_FILTER_SCRIPT_ID;
+        DROP TABLE AGENT_FILTER_SCRIPT;
+
+        RENAME COLUMN WORKFLOW_DEFINITION_JOB_CONFIG.AGENT_SCRIPT_ID TO AGENT_POOL_ID;
+        UPDATE WORKFLOW_DEFINITION_JOB_CONFIG SET AGENT_POOL_ID = NULL;
+        ALTER TABLE WORKFLOW_DEFINITION_JOB_CONFIG ADD CONSTRAINT WDJC_AGENT_POOL_FK
+            FOREIGN KEY (AGENT_POOL_ID)
+            REFERENCES AGENT_POOL (ID)
+        ;
+        CREATE INDEX WDJC_AGENT_POOL_IX
+             ON WORKFLOW_DEFINITION_JOB_CONFIG(AGENT_POOL_ID);
+        </sql>
+    </change>
+    <change number="108">
+      <description>Remove non-template projects.</description>
+      <groovy file="4.0/108_delete_non_template_projects.groovy"/>
+      <sql separator=";">
+        ALTER TABLE PROJECT ALTER COLUMN PROJECT_TEMPLATE_ID NOT NULL;
+        ALTER TABLE JOB_CONFIG DROP CONSTRAINT JC_PROJECT_FK;
+        DROP INDEX JC_PROJECT_IX;
+        ALTER TABLE JOB_CONFIG DROP CONSTRAINT JC_NAME_UNIQUE;
+        ALTER TABLE JOB_CONFIG DROP COLUMN PROJECT_ID;
+        ALTER TABLE JOB_CONFIG DROP COLUMN RESOURCE_ID;
+        ALTER TABLE WORKFLOW_DEFINITION DROP COLUMN IS_LIBRARY;
+
+        DELETE FROM SEC_RESOURCE_FOR_TEAM WHERE SEC_RESOURCE_ID in (
+            SELECT ID FROM SEC_RESOURCE WHERE SEC_RESOURCE_TYPE_ID = '00000000-0000-0000-0000-000000000012'
+        );
+        DELETE FROM SEC_ROLE_ACTION WHERE SEC_RESOURCE_ROLE_ID IN (
+            SELECT ID FROM SEC_RESOURCE_ROLE WHERE SEC_RESOURCE_TYPE_ID = '00000000-0000-0000-0000-000000000012'
+        );
+        DELETE FROM SEC_ROLE_ACTION WHERE SEC_ACTION_ID IN (
+            SELECT ID FROM SEC_ACTION WHERE SEC_RESOURCE_TYPE_ID = '00000000-0000-0000-0000-000000000012'
+        );
+        DELETE FROM SEC_RESOURCE_FOR_TEAM WHERE SEC_RESOURCE_ID IN (
+            SELECT ID FROM SEC_RESOURCE WHERE SEC_RESOURCE_TYPE_ID = '00000000-0000-0000-0000-000000000012'
+        );
+        DELETE FROM SEC_RESOURCE_ROLE_TO_ACTION WHERE SEC_RESOURCE_ROLE_ID IN (
+            SELECT ID FROM SEC_RESOURCE_ROLE WHERE SEC_RESOURCE_TYPE_ID = '00000000-0000-0000-0000-000000000012'
+        );
+        DELETE FROM SEC_RESOURCE_ROLE WHERE SEC_RESOURCE_TYPE_ID = '00000000-0000-0000-0000-000000000012';
+        DELETE FROM SEC_RESOURCE WHERE SEC_RESOURCE_TYPE_ID = '00000000-0000-0000-0000-000000000012';
+        DELETE FROM SEC_ACTION WHERE SEC_RESOURCE_TYPE_ID = '00000000-0000-0000-0000-000000000012';
+        DELETE FROM SEC_RESOURCE_TYPE WHERE ID ='00000000-0000-0000-0000-000000000012';
+      </sql>
+    </change>
+    <change number="109">
+      <description>Create job config index to workflow definition.</description>
+      <sql separator=";">
+      CREATE INDEX JC_WORKFLOW_DEFINITION_IX ON JOB_CONFIG(WORKFLOW_DEFINITION_ID);
+      </sql>
+    </change>
+    <change number="110">
+      <description>Move lockable resources onto the workflow template.</description>
+      <sql separator=";">
+          ALTER TABLE WORKFLOW_LOCK_RES_REF DROP CONSTRAINT WLRR_WORKFLOW_FK;
+          
+          ALTER TABLE WORKFLOW DROP COLUMN LOCK_ENV;
+          ALTER TABLE WORKFLOW_TEMPLATE ADD COLUMN LOCK_ENV NUMERIC DEFAULT 0;
+   
+          DELETE FROM WORKFLOW_LOCK_RES_REF;
+
+          RENAME COLUMN WORKFLOW_LOCK_RES_REF.WORKFLOW_ID TO WORKFLOW_TEMPLATE_ID;
+
+          ALTER TABLE WORKFLOW_LOCK_RES_REF ADD CONSTRAINT WLRR_WT_FK
+              FOREIGN KEY (WORKFLOW_TEMPLATE_ID)
+              REFERENCES WORKFLOW_TEMPLATE (ID)
+          ;
+      </sql>
+    </change>
+    <change number="111">
+      <description>Add unique constraint to repository names</description>
+      <sql separator=";">
+        ALTER TABLE REPOSITORY ADD CONSTRAINT R_NAME_UNIQUE UNIQUE(NAME);
+      </sql>
+    </change>
+    <change number="112">
+      <description>Remove lock environment from workflow templates</description>
+      <sql separator=";">
+        ALTER TABLE WORKFLOW_TEMPLATE DROP COLUMN LOCK_ENV;
+      </sql>
+    </change>
+    <change number="113">
+      <description>Deleted orphaned security resources</description>
+      <sql separator=";">
+        DELETE FROM SEC_RESOURCE_FOR_TEAM WHERE SEC_RESOURCE_ID IN (
+            SELECT ID FROM SEC_RESOURCE WHERE SEC_RESOURCE_TYPE_ID = '00000000-0000-0000-0000-000000000004'
+            AND ID NOT IN (SELECT RESOURCE_ID FROM PROJECT)
+        );
+        DELETE FROM SEC_RESOURCE WHERE SEC_RESOURCE_TYPE_ID = '00000000-0000-0000-0000-000000000004'
+        AND ID NOT IN (SELECT RESOURCE_ID FROM PROJECT);
+        
+        DELETE FROM SEC_RESOURCE_FOR_TEAM WHERE SEC_RESOURCE_ID IN (
+            SELECT ID FROM SEC_RESOURCE WHERE SEC_RESOURCE_TYPE_ID = '00000000-0000-0000-0000-000000000007'
+            AND ID NOT IN (SELECT RESOURCE_ID FROM WORKFLOW)
+        );
+        DELETE FROM SEC_RESOURCE WHERE SEC_RESOURCE_TYPE_ID = '00000000-0000-0000-0000-000000000007'
+        AND ID NOT IN (SELECT RESOURCE_ID FROM WORKFLOW);
+      </sql>
+    </change>
+    <change number="114">
+      <description>Add security action descriptions</description>
+      <sql separator=";">
+        UPDATE SEC_ACTION
+        SET DESCRIPTION = 'Ability to view a workflow. This is required to use the workflow in a template. It is not required by users of projects to run build configurations and secondary processes.'
+        WHERE ID = '00000000-0000-0000-0000-000000000028';
+        UPDATE SEC_ACTION
+        SET DESCRIPTION = 'Ability to edit and delete a workflow and create, edit and delete jobs in it.'
+        WHERE ID = '00000000-0000-0000-0000-000000000029';
+        UPDATE SEC_ACTION
+        SET DESCRIPTION = 'Ability to create new workflows.'
+        WHERE ID = '00000000-0000-0000-0000-000000000094';
+        
+        UPDATE SEC_ACTION
+        SET DESCRIPTION = 'Ability to view a project. This is required to see the project and to see the project''s build lives and related data.'
+        WHERE ID = '00000000-0000-0000-0000-000000000032';
+        UPDATE SEC_ACTION
+        SET DESCRIPTION = 'Ability to edit and delete a project. This includes setting the configuration provided by the project''s template as well as management build configurations and secondary processes on the project.'
+        WHERE ID = '00000000-0000-0000-0000-000000000033';
+        UPDATE SEC_ACTION
+        SET DESCRIPTION = 'Ability to download artifacts produced by a project.'
+        WHERE ID = '00000000-0000-0000-0000-000000000059';
+        UPDATE SEC_ACTION
+        SET DESCRIPTION = 'Ability to create new projects from templates.'
+        WHERE ID = '00000000-0000-0000-0000-000000000091';
+        
+        UPDATE SEC_ACTION
+        SET DESCRIPTION = 'Ability to run a build configuration or secondary process.'
+        WHERE ID = '00000000-0000-0000-0000-000000000035';
+        UPDATE SEC_ACTION
+        SET DESCRIPTION = 'Ability to run a build configuration or secondary process only through the completion of a pre-created task.'
+        WHERE ID = '00000000-0000-0000-0000-000000000036';
+        UPDATE SEC_ACTION
+        SET DESCRIPTION = 'Ability to restart build configurations and secondary processes that have already completed or those that are running in certain scenarios where there are parallel activities. You only need this action granted by a role. There is no resource that needs to be added to a user''s team. A user can restart any process they can run.'
+        WHERE ID = '00000000-0000-0000-0000-000000000067';
+        UPDATE SEC_ACTION
+        SET DESCRIPTION = 'Ability to change the priority of running build configurations and secondary processes. You only need this action granted by a role. There is no resource that needs to be added to a user''s team. A user can prioritize any process they can run.'
+        WHERE ID = '00000000-0000-0000-0000-000000000068';
+        UPDATE SEC_ACTION
+        SET DESCRIPTION = 'Ability to delete records of builds and secondary processes. You only need this action granted by a role. There is no resource that needs to be added to a user''s team. A user can delete any runtime records of a project they can view.'
+        WHERE ID = '00000000-0000-0000-0000-000000000069';
+        UPDATE SEC_ACTION
+        SET DESCRIPTION = 'Ability to add stamps manually to a build life. You only need this action granted by a role. There is no resource that needs to be added to a user''s team. A user can add a stamp to any project they can view.'
+        WHERE ID = '00000000-0000-0000-0000-000000000070';
+        
+        UPDATE SEC_ACTION
+        SET DESCRIPTION = 'Ability to manage the configuration of the uBuild server itself. You only need this action granted by a role. There is no resource that needs to be added to a user''s team.'
+        WHERE ID = '00000000-0000-0000-0000-000000000037';
+        
+        UPDATE SEC_ACTION
+        SET DESCRIPTION = 'Ability to view and use a repository configuration in a source configuration. This is required for users to view build configurations that use the repository and for users to make a build configuration''s source configuration use the repository.'
+        WHERE ID = '00000000-0000-0000-0000-000000000039';
+        UPDATE SEC_ACTION
+        SET DESCRIPTION = 'Ability to edit and delete a repository configuration.'
+        WHERE ID = '00000000-0000-0000-0000-000000000040';
+        UPDATE SEC_ACTION
+        SET DESCRIPTION = 'Ability to create new repository configurations.'
+        WHERE ID = '00000000-0000-0000-0000-000000000093';
+        
+        UPDATE SEC_ACTION
+        SET DESCRIPTION = 'Ability to view and report on audit information containing changes to security and configuration. You only need this action granted by a role. There is no resource that needs to be added to a user''s team.'
+        WHERE ID = '00000000-0000-0000-0000-000000000044';
+        
+        UPDATE SEC_ACTION
+        SET DESCRIPTION = 'Ability to security configuration such as Authentication Realms, Authorization Realms, Roles, Resources Roles, Teams and User Management. You only need this action granted by a role. There is no resource that needs to be added to a user''s team.'
+        WHERE ID = '00000000-0000-0000-0000-000000000047';
+        
+        UPDATE SEC_ACTION
+        SET DESCRIPTION = 'Ability to view and use scripts in a script group. This is required for users to view workflow configurations that uses scripts from a script group.'
+        WHERE ID = '00000000-0000-0000-0000-000000000052';
+        UPDATE SEC_ACTION
+        SET DESCRIPTION = 'Ability to edit and delete scripts in a script group.'
+        WHERE ID = '00000000-0000-0000-0000-000000000053';
+        UPDATE SEC_ACTION
+        SET DESCRIPTION = 'Ability to create new scripts.'
+        WHERE ID = '00000000-0000-0000-0000-000000000095';
+        
+        UPDATE SEC_ACTION
+        SET DESCRIPTION = 'Ability to view a distributed server instance.'
+        WHERE ID = '00000000-0000-0000-0000-000000000060';
+        UPDATE SEC_ACTION
+        SET DESCRIPTION = 'Ability to edit a distributed server instance.'
+        WHERE ID = '00000000-0000-0000-0000-000000000061';
+        UPDATE SEC_ACTION
+        SET DESCRIPTION = 'Ability to login to the web UI of a distributed server instance.'
+        WHERE ID = '00000000-0000-0000-0000-000000000062';
+        
+        UPDATE SEC_ACTION
+        SET DESCRIPTION = 'Ability to view a agent relay instance.'
+        WHERE ID = '00000000-0000-0000-0000-000000000063';
+        UPDATE SEC_ACTION
+        SET DESCRIPTION = 'Ability to edit a agent relay instance.'
+        WHERE ID = '00000000-0000-0000-0000-000000000064';
+        
+        UPDATE SEC_ACTION
+        SET DESCRIPTION = 'Ability to view a agent pool and the agents in it. This is required to see workflows that have jobs that use the agent pool.'
+        WHERE ID = '00000000-0000-0000-0000-000000000072';
+        UPDATE SEC_ACTION
+        SET DESCRIPTION = 'Ability to edit and delete a agent pool. This is required to add and remove agents from the pool.'
+        WHERE ID = '00000000-0000-0000-0000-000000000073';
+        UPDATE SEC_ACTION
+        SET DESCRIPTION = 'Ability to use a agent pool. This is and view are required to use a agent pool for a job on a workflow.'
+        WHERE ID = '00000000-0000-0000-0000-000000000074';
+        
+        UPDATE SEC_ACTION
+        SET DESCRIPTION = 'Ability to view a request plan.'
+        WHERE ID = '00000000-0000-0000-0000-000000000079';
+        UPDATE SEC_ACTION
+        SET DESCRIPTION = 'Ability to edit and delete a request plan.'
+        WHERE ID = '00000000-0000-0000-0000-000000000080';
+        
+        UPDATE SEC_ACTION
+        SET DESCRIPTION = 'Ability to view a project template. This is required to create a project using the template or view an existing project configuration that uses the template.'
+        WHERE ID = '00000000-0000-0000-0000-000000000082';
+        UPDATE SEC_ACTION
+        SET DESCRIPTION = 'Ability to edit and delete a project template and the build templates, secondary process templates and source templates in them.'
+        WHERE ID = '00000000-0000-0000-0000-000000000083';
+        UPDATE SEC_ACTION
+        SET DESCRIPTION = 'Ability to create new project templates.'
+        WHERE ID = '00000000-0000-0000-0000-000000000096';
+        
+        UPDATE SEC_ACTION
+        SET DESCRIPTION = 'Ability to view a Codestation project. This is required to see the Codestation project and configure it as a dependency.'
+        WHERE ID = '00000000-0000-0000-0000-000000000089';
+        UPDATE SEC_ACTION
+        SET DESCRIPTION = 'Ability to edit and delete a Codestation project, manage its build lives and their artifacts.'
+        WHERE ID = '00000000-0000-0000-0000-000000000090';
+        UPDATE SEC_ACTION
+        SET DESCRIPTION = 'Ability to create new Codestation projects.'
+        WHERE ID = '00000000-0000-0000-0000-000000000092';
+        UPDATE SEC_ACTION
+        SET DESCRIPTION = 'Ability to download artifacts of a Codestation project.'
+        WHERE ID = '00000000-0000-0000-0000-000000000097';
+
+        UPDATE SEC_ACTION
+        SET DESCRIPTION = 'Ability to add users to teams you are in in roles that already exist on the team.'
+        WHERE ID = '00000000-0000-0000-0000-000000000098';
+        UPDATE SEC_ACTION
+        SET DESCRIPTION = 'Ability to add resources to teams you are in in roles that already exist on the team.'
+        WHERE ID = '00000000-0000-0000-0000-000000000099';
+      </sql>
+    </change>
+
+    <change number="115">
+      <description>Remove the Aborting and Suspending statuses</description>
+      <sql separator=";">
+        UPDATE JOB_TRACE SET STATUS = 'Aborted' WHERE STATUS = 'Aborting';
+        UPDATE JOB_TRACE SET STATUS = 'Suspended' WHERE STATUS = 'Suspending';
+        UPDATE WORKFLOW_CASE SET STATUS = 'Aborted' WHERE STATUS = 'Aborting';
+        UPDATE WORKFLOW_CASE SET STATUS = 'Suspended' WHERE STATUS = 'Suspending';
+      </sql>
+    </change>
+    
+    <change number="116">
+      <description>Add user management action.</description>
+      <sql separator=";">
+        insert into sec_action (id, version, name, description, enabled, cascading, sec_resource_type_id)
+          values ('00000000-0000-0000-0000-000000000100', 0, 'User Management', 'Ability to create and edit users.', 1, 0, '00000000-0000-0000-0000-000000100022');
+      </sql>
+      <groovy file="repair_permissions.groovy"/>
+    </change>
+    
+    <change number="117">
+      <description>Fixing "Unique Working Directory" script</description>
+      <sql separator=";">
+        UPDATE UBUILD.WORK_DIR_SCRIPT
+            SET PATH = '${env/AGENT_HOME}/var/work/job/${gvy:JobTraceLookup.current.id}'
+            WHERE ID = -2;
+      </sql>
+    </change>
+    
+    <change number="118">
+      <description>Removing Agent-Pools from Workflow Cases</description>
+      <sql separator=";">
+        ALTER TABLE WORKFLOW_CASE DROP CONSTRAINT WC_AGENT_POOL_FK;
+        ALTER TABLE WORKFLOW_CASE DROP COLUMN AGENT_POOL_ID;
+      </sql>
+    </change>
+    
+    <change number="119">
+      <description>Removing Life-Cycle Models</description>
+      <sql separator=";"><![CDATA[
+        ALTER TABLE STATUS DROP CONSTRAINT S_STATUS_GROUP_FK;
+        ALTER TABLE STATUS DROP COLUMN STATUS_GROUP_ID;
+        
+        ALTER TABLE ARTIFACT_SET DROP CONSTRAINT AS_ARTIFACT_SET_GROUP_FK;
+        ALTER TABLE ARTIFACT_SET DROP COLUMN ARTIFACT_SET_GROUP_ID;
+        
+        ALTER TABLE CODESTATION_PROJECT DROP CONSTRAINT CP_LIFE_CYCLE_MODEL_FK;
+        ALTER TABLE CODESTATION_PROJECT DROP COLUMN LIFE_CYCLE_MODEL_ID;
+        
+        ALTER TABLE JOB_CONFIG DROP CONSTRAINT JC_LIFE_CYCLE_MODEL_FK;
+        ALTER TABLE JOB_CONFIG DROP COLUMN LIFE_CYCLE_MODEL_ID;
+        
+        ALTER TABLE PROJECT DROP CONSTRAINT P_LIFE_CYCLE_MODEL_FK;
+        ALTER TABLE PROJECT DROP COLUMN LIFE_CYCLE_MODEL_ID;
+        
+        ALTER TABLE PROJECT_TEMPLATE DROP CONSTRAINT PT_LIFE_CYCLE_MODEL_FK;
+        ALTER TABLE PROJECT_TEMPLATE DROP COLUMN LIFE_CYCLE_MODEL_ID;
+        
+        ALTER TABLE WORKFLOW_DEFINITION DROP CONSTRAINT WD_LIFE_CYCLE_MODEL_FK;
+        ALTER TABLE WORKFLOW_DEFINITION DROP COLUMN LIFE_CYCLE_MODEL_ID;
+        
+        DROP TABLE LIFE_CYCLE_MODEL;
+        
+        ALTER TABLE CLEANUP_CONFIG DROP CONSTRAINT CC_STATUS_GROUP_FK;
+        ALTER TABLE CLEANUP_CONFIG DROP COLUMN STATUS_GROUP_ID;
+        
+        DROP TABLE ARTIFACT_SET_GROUP;
+        DROP TABLE STATUS_GROUP;
+        
+        DELETE FROM CLEANUP_CONFIG;
+        INSERT INTO CLEANUP_CONFIG (ID, VERSION, NAME, DATA)
+        VALUES (-1, 0, 'Default Cleanup', '<?xml version="1.0" encoding="UTF-8"?><cleanup-config></cleanup-config>');
+      ]]></sql>
+      <groovy file="4.0/119_consolidate_status_and_artifact_sets.groovy"/>
+    </change>
+    
+    <change number="120">
+      <description>Change step pre-condition scripts to use the new domain specific language</description>
+      <sql separator=";">
+        UPDATE STEP_PRE_CONDITION_SCRIPT SET SCRIPT = 'false' WHERE ID = 0;
+        UPDATE STEP_PRE_CONDITION_SCRIPT SET SCRIPT = 'stepStatus.allPriorIn(SUCCESS, SUCCESS_WARN)' WHERE ID = 1;
+        UPDATE STEP_PRE_CONDITION_SCRIPT SET SCRIPT = 'stepStatus.priorIn(SUCCESS, SUCCESS_WARN)' WHERE ID = 2;
+        UPDATE STEP_PRE_CONDITION_SCRIPT SET SCRIPT = 'stepStatus.anyPriorIn(FAILED)' WHERE ID = 3;
+        UPDATE STEP_PRE_CONDITION_SCRIPT SET SCRIPT = 'true' WHERE ID = 4;
+        UPDATE STEP_PRE_CONDITION_SCRIPT SET SCRIPT = 'stepStatus.priorIn(FAILED)' WHERE ID = 5;
+      </sql>
+    </change>
+    
+    <change number="121">
+      <description>Removing Agent Pool references from Build Requests</description>
+      <sql separator=";">
+        ALTER TABLE BUILD_REQUEST DROP CONSTRAINT BR_AGENT_POOL_FK;
+        ALTER TABLE BUILD_REQUEST DROP COLUMN AGENT_POOL_ID;
+      </sql>
+    </change>
+    
+    <change number="122">
+      <description>Change step pre-condition scripts to use javascript as their language</description>
+      <sql separator=";">
+        UPDATE STEP_PRE_CONDITION_SCRIPT SET LANGUAGE = 'javascript';
+      </sql>
+    </change>
+    
+    <change number="123">
+      <description>Add workflow abort security action</description>
+      <sql separator=";">
+        insert into sec_action (id, version, name, description, enabled, cascading, sec_resource_type_id)
+        values ('00000000-0000-0000-0000-000000000101', 0, 'Workflow Abort', 'Ability to abort running build configurations and secondary processes. You only need this action granted by a role. There is no resource that needs to be added to a user''s team. A user can restart any process they can run.', 1, 0, '00000000-0000-0000-0000-000000000007');
+      </sql>
+      <groovy file="repair_permissions.groovy"/>
+    </change>
+    
+    <change number="124">
+      <description>Change job pre-condition scripts to use javascript as their language and update job pre-condition scripts</description>
+      <sql separator=";"><![CDATA[
+        UPDATE JOB_PRE_CONDITION_SCRIPT SET LANGUAGE = 'javascript';
+        UPDATE JOB_PRE_CONDITION_SCRIPT SET SCRIPT = 'jobStatus.parentsIn(SUCCESS)' WHERE ID = -1;
+        UPDATE JOB_PRE_CONDITION_SCRIPT SET SCRIPT = 'jobStatus.allAncestorsIn(SUCCESS)' WHERE ID = -2;
+        UPDATE JOB_PRE_CONDITION_SCRIPT SET SCRIPT = 'true' WHERE ID = -3;
+        UPDATE JOB_PRE_CONDITION_SCRIPT SET SCRIPT = 'false' WHERE ID = -4;
+        UPDATE JOB_PRE_CONDITION_SCRIPT SET SCRIPT = 'jobStatus.allCompletedIn(SUCCESS)' WHERE ID = -5;
+        UPDATE JOB_PRE_CONDITION_SCRIPT SET SCRIPT = 'jobStatus.parentsIn(SUCCESS, NOT_NEEDED)' WHERE ID = -6;
+        UPDATE JOB_PRE_CONDITION_SCRIPT SET SCRIPT = 'jobStatus.allAncestorsIn(SUCCESS, NOT_NEEDED)' WHERE ID = -7;
+        UPDATE JOB_PRE_CONDITION_SCRIPT SET SCRIPT = 'jobStatus.allAncestorsIn(SUCCESS, NOT_NEEDED) && !jobStatus.anyIteratedIn(FAILED)' WHERE ID = -8;
+        UPDATE JOB_PRE_CONDITION_SCRIPT SET SCRIPT = 'jobStatus.anyIn(FAILED)' WHERE ID = -9;
+      ]]></sql>
+    </change>
+
+    <change number="125">
+      <description>Add setting to control maven proxy verifying hashes.</description>
+      <sql separator=";">
+        ALTER TABLE MAVEN_REPOSITORY ADD COLUMN VERIFY_HASHES NUMERIC DEFAULT 1;
+      </sql>
+    </change>
+    
+    <change number="126">
+      <description>Fix the LDAP group mapping</description>
+      <sql separator=";">
+        update sec_group_mapping set regex = '.*', replacement = '$0'
+        where id = '00000000-0000-0000-0000-000000000501';
+      </sql>
+    </change>
+    
+    <change number="127">
+      <description>Update recipient generator scripts</description>
+      <sql><![CDATA[
+        update notification_recipient_gen set data = '<?xml version="1.0" encoding="UTF-8"?><script>users.getAllUsers()</script>' where id = 0;;
+        update notification_recipient_gen set name = 'Committing Developers', description = 'Users retrieved from the change logs of a build.',
+            data = '<?xml version="1.0" encoding="UTF-8"?><script>users.getAllContributors()</script>' where id = -1;;
+        update notification_recipient_gen set name = 'Committing and Dependent Developers', description = 'Users that have committed to the current project or dependency projects.', 
+            data = '<?xml version="1.0" encoding="UTF-8"?><script>users.getAllContributorsAndDependentContributors()</script>' where id = -2;;
+        update notification_recipient_gen set name = 'Committing Developers (Context)', description = 'Users in the request context of dependency projects.', 
+            data = '<?xml version="1.0" encoding="UTF-8"?><script>users.getAllContributorsAndDependentContributorsInContext()</script>' where id = -3;;
+      ]]></sql>
+    </change>
+    
+    <change number="128">
+      <description>Fix user overrideable workflow properties.</description>
+      <sql separator=";">
+        DELETE FROM WORKFLOW_PROPERTY WHERE USER_OVERRIDE != 0;
+        
+        CREATE TABLE WORKFLOW_PROP (
+            WORKFLOW_ID       BIGINT NOT NULL,
+            NAME              VARCHAR(255) NOT NULL,
+            VALUE             VARCHAR(400),
+            LONG_VALUE        CLOB,
+            SECURE            NUMERIC DEFAULT 0 NOT NULL,
+            PRIMARY KEY (WORKFLOW_ID, NAME)
+        );
+
+        ALTER TABLE WORKFLOW_PROP ADD CONSTRAINT WORKFLOW_PROP_FK
+            FOREIGN KEY (WORKFLOW_ID)
+            REFERENCES WORKFLOW (ID)
+            ON DELETE CASCADE
+        ;
+
+        CREATE INDEX WORKFLOW_PROP_IX
+            ON WORKFLOW_PROP(WORKFLOW_ID);
+            
+        INSERT INTO WORKFLOW_PROP (WORKFLOW_ID, NAME, VALUE, LONG_VALUE, SECURE)
+        SELECT WORKFLOW_ID, NAME, VALUE, LONG_VALUE, SECURE FROM WORKFLOW_PROPERTY;
+        
+        DROP TABLE WORKFLOW_PROPERTY;
+      </sql>
+    </change>
+    
+    <change number="129">
+      <description>Updating behavior of "Always Run" job precondition script for aborted workflows.</description>
+      <sql separator=";">
+        UPDATE JOB_PRE_CONDITION_SCRIPT SET SCRIPT = '!jobStatus.anyIn(ABORTED, ABORTING)' WHERE ID = -3;
+      </sql>
+    </change>
+    
+    <change number="130">
+      <description>Change Anthill3 to uBuild.</description>
+      <sql separator=";">
+        RENAME TABLE ANTHILL_LICENSE TO UBUILD_LICENSE;
+        UPDATE HI_LO_SEQ SET SEQ_NAME = 'UBUILD_LICENSE' WHERE SEQ_NAME = 'ANTHILL_LICENSE';
+        UPDATE HI_LO_SEQ SET SEQ_NAME = 'UBUILD_USER' WHERE SEQ_NAME = 'SEC_USER';
+        UPDATE UBUILD_LICENSE SET CLASS = 'com.urbancode.ubuild.domain.license.UBuildLicense';
+      </sql>
+      <groovy file="4.0/130_java_package_migration.groovy"/>
+    </change>
+    
+    <change number="131">
+      <description>Update Notification Templates to remove context scripting</description>
+      <sql>
+        UPDATE TEMPLATE SET DATA = '<![CDATA[<?xml version="1.0" encoding="UTF-8"?>
+<template>
+<name>Simple Workflow Email Template</name>
+<template-text><![CDATA[## BEGIN SECTION Subject
+
+#set($project = $workflow.Project)
+#set($stamp = $workflow.BuildLife.latestStamp())
+
+Workflow: 
+#if($stamp != "")
+  $project.Name - $workflow.Name ($stamp):
+#else
+  $project.Name - $workflow.Name:
+#end
+
+#if($workflow.Status.equalsIgnoreCase("Complete"))
+  Success
+#else
+  $workflow.Status
+#end
+
+## END SECTION Subject
+
+## BEGIN SECTION Body
+## PROPERTY Content-Type: text/html
+## PROPERTY X-Priority: 3
+
+<!DOCTYPE html PUBLIC "-//W3C//DTD HTML 4.01 Transitional//EN">
+
+<html>
+
+<head>
+<title>Workflow</title>
+<STYLE TYPE="text/css">
+<!--
+table.data-table td {
+    vertical-align: top;
+}
+
+table.data-table
+{
+    font-family: arial, helvetica, sans-serif;
+    font-size: 12px;
+    background-color: #567596;
+}
+
+table.data-table caption
+{
+    padding-top: 10px;
+    padding-bottom: 10px;
+    text-align: left;
+}
+
+table.data-table th
+{
+    text-align: center;
+    background-color: #cfdbef;
+    height: 25px;
+}
+
+table.data-table td
+{
+    vertical-align: top;
+}
+
+table.data-table tr.odd
+{
+    background-color: #ffffff;
+}
+
+table.data-table tr.even
+{
+    background-color: #f6f6f6;
+}
+
+.data-table-button-bar
+{
+    padding-top: 10px;
+    padding-bottom: 10px;
+}
+
+.data-table-container
+{
+    padding-top: 10px;
+    padding-bottom: 10px;
+}
+-->
+</STYLE>
+</head>
+<body>
+
+<h1> Workflow: $workflow.Name
+</h1>
+
+
+<div class="data-table-container">
+<table class="data-table" cellpadding="4" cellspacing="1" width="100%">
+ <table-body>
+  <tr class="data-table-head">
+    <th scope="col" align="left" valign="middle"><strong>Job Name</strong></th>
+    <th scope="col" align="left" valign="middle"><strong>Agent Name</strong></th>
+    <th scope="col" align="left" valign="middle">Status</strong></th>
+  </tr>
+  #foreach($trace in $workflow.JobTraceList)
+    <tr bgcolor="#ffffff">
+      <td>$trace.getName()</td>
+      <td align="center">$trace.Agent</td>
+      #set($status = $trace.Status)
+      <td align="center">
+        #if($trace.statusIsSuccess())
+          <strong style="color: green">
+        #elseif($trace.statusIsFailure())
+          <strong style="color: red">
+        #else
+          <strong style="color: blue">
+        #end
+        $status</strong>
+      </td>
+    </tr>
+  #end
+ </table-body>
+</table>
+
+Additional information available on uBuild here:
+  <a href="$workflow.Url">
+  $workflow.Url</a>
+</div>
+
+</body>
+</html>
+
+## END SECTION Body]]]]><![CDATA[></template-text>
+<description>A simple example of a velocity template for creating notification emails for notification service.</description>
+</template>]]>' WHERE ID = -2;;
+
+        UPDATE TEMPLATE SET DATA = '<![CDATA[<?xml version="1.0" encoding="UTF-8" standalone="no"?><template><name>Build Request Failed Template</name><template-text><![CDATA[## BEGIN SECTION Subject
+
+#set($trace = $request.JobTrace)
+#set($project = $trace.Project)
+
+Request Failed: $project.Name - $request.Workflow.Name
+
+## END SECTION Subject
+
+## BEGIN SECTION Body
+## PROPERTY Content-Type: text/html
+## PROPERTY X-Priority: 3
+
+<!DOCTYPE html PUBLIC "-//W3C//DTD HTML 4.01 Transitional//EN">
+
+#set($trace = $request.JobTrace)
+#set($project = $trace.Project)
+
+<html>
+
+<head>
+<title>Workflow</title>
+</head>
+<body>
+
+Request Failed: $project.Name - $request.Workflow.Name
+<p>
+
+Additional information available on uBuild here:
+<a href="$request.Url">$request.Url</a>
+
+</body>
+</html>
+
+## END SECTION Body]]]]><![CDATA[></template-text>
+<description>A simple example template to notify users of a failed build request</description>
+</template>]]>' WHERE ID = -3;;
+        
+        UPDATE TEMPLATE SET ID = -1, VERSION = 0 WHERE ID = -2;;
+        UPDATE TEMPLATE SET ID = -2, VERSION = 0 WHERE ID = -3;;
+        UPDATE NOT_SCHEME_WHO_WHEN_MEDIUM SET TEMPLATE_ID = -1 WHERE TEMPLATE_ID = -2;;
+        UPDATE NOT_SCHEME_WHO_WHEN_MEDIUM SET TEMPLATE_ID = -2 WHERE TEMPLATE_ID = -3;;
+        UPDATE NOT_SCHEME_WHO_WHEN_MEDIUM SET TEMPLATE_ID = -1 WHERE TEMPLATE_ID = -8;;
+        DELETE FROM TEMPLATE WHERE ID = -8;;
+        INSERT INTO TEMPLATE(ID, VERSION, CLASS, DATA, INACTIVE) VALUES(-3, 0, 
+            'com.urbancode.ubuild.domain.template.Template', '<![CDATA[<?xml version="1.0" encoding="UTF-8" standalone="no"?>
+<template>
+<name>Simple IM Template</name>
+<template-text><![CDATA[## BEGIN SECTION Body
+
+#if ( !$workflow )
+#set($workflow = $request.WorkflowCase)
+#end
+#if($workflow.Status.equalsIgnoreCase("Complete"))
+Success
+#else
+$workflow.Status
+#end
+#set($project = $workflow.Project)
+#set($stamp = $workflow.BuildLife.latestStamp())
+$project.Name - $workflow.Name #if($stamp != "") ($stamp) #end
+$workflow.Url
+
+## END SECTION Body]]]]><![CDATA[></template-text>
+<description>A simple example of a velocity template for creating notification IMs for notification service.</description>
+</template>]]>', 0);;
+      </sql>
+    </change>
+    <change number="132">
+      <description>Remove unused tables and sequences</description>
+      <sql separator=";">
+      DROP TABLE STEP_TYPE_TAGS;
+      DROP TABLE STEP_TYPE_ENV_ARGS;
+      DROP TABLE STEP_TYPE_COMMAND_ARGS;
+      DROP TABLE STEP_TYPE;
+      DROP TABLE PROPERTY_VALUE;
+      DROP TABLE PROPERTY_VALUE_GROUP;
+      DROP TABLE PLUGIN_PROP_DEF;
+      DROP TABLE PLUGIN_PROP_DEF_GROUP;
+      DROP TABLE PLUGIN;
+      DROP TABLE SEC_SYSTEM_FUNCTION;
+      
+      DELETE FROM HI_LO_SEQ WHERE SEQ_NAME IN (
+        'ARTIFACT_SET_GROUP',
+        'AUTHENTICATION_REALM',
+        'AUTHORIZATION_REALM',
+        'BUILD_INGREDIENT',
+        'BUILD_INGREDIENT_PROP',
+        'LIFE_CYCLE_MODEL',
+        'MAILING_LIST',
+        'PLUGIN',
+        'PLUGIN_PROP_DEF_GROUP',
+        'PROPERTY_VALUE_GROUP',
+        'SCHEDULED_SCRIPT',
+        'SEC_SYSTEM_FUNCTION',
+        'STATUS_GROUP',
+        'STEP_TYPE',
+        'VERSION'
+      );
+      </sql>
+    </change>
+    
+    <change number="133">
+      <description>Update event selectors table to have a TYPE column</description>
+      <sql separator=";"><![CDATA[
+        ALTER TABLE WORKFLOW_CASE_SELECTOR ADD COLUMN TYPE VARCHAR(255);
+        UPDATE WORKFLOW_CASE_SELECTOR SET TYPE = 'WORKFLOW_END_EVENT', SCRIPT = 'workflow.statusIsSuccess()' WHERE ID = 0;
+        UPDATE WORKFLOW_CASE_SELECTOR SET TYPE = 'WORKFLOW_END_EVENT', SCRIPT = '!workflow.statusIsSuccess()' WHERE ID = -1;
+        UPDATE WORKFLOW_CASE_SELECTOR SET TYPE = 'WORKFLOW_END_EVENT', SCRIPT = 'true' WHERE ID = -2;
+        UPDATE WORKFLOW_CASE_SELECTOR SET TYPE = 'BUILD_REQUEST_FAILED_EVENT', SCRIPT = 'true' WHERE ID = -3;
+        UPDATE WORKFLOW_CASE_SELECTOR SET TYPE = 'TASK_CREATED_EVENT', SCRIPT = 'true' WHERE ID = -4;
+        UPDATE WORKFLOW_CASE_SELECTOR SET TYPE = 'TASK_COMPLETED_EVENT', SCRIPT = 'true' WHERE ID = -5;
+        UPDATE WORKFLOW_CASE_SELECTOR SET TYPE = 'TASK_EVENT', SCRIPT = 'true' WHERE ID = -6;
+        UPDATE WORKFLOW_CASE_SELECTOR SET TYPE = 'TASK_COMPLETED_EVENT' WHERE ID = -7;
+        UPDATE WORKFLOW_CASE_SELECTOR SET TYPE = 'WORKFLOW_END_EVENT', SCRIPT = 'var result = false
+if (!workflow.statusIsSuccess()) {
+    result = true
+}
+else {
+    var prevWorkflowCase = workflow.getPrevious()
+    if (prevWorkflowCase != null && prevWorkflowCase.isComplete() && !prevWorkflowCase.statusIsSuccess() && workflow.statusIsSuccess()) {
+            result = true
+        }
+}
+
+result' WHERE ID = -8;
+        UPDATE WORKFLOW_CASE_SELECTOR SET TYPE = 'WORKFLOW_END_EVENT', SCRIPT = 'var result = false
+var prevBuildLife = workflow.getBuildLife().getPreviousBuildLife()
+if (prevBuildLife != null) {
+    result = true
+}
+else {
+    var prevWorkflowCase = workflow.getPrevious()
+    if (prevWorkflowCase == null || !prevWorkflowCase.isComplete() || prevWorkflowCase.statusIsSuccess() != workflow.statusIsSuccess()) {
+        result = true
+    }
+}
+
+result' WHERE ID = -9;
+        UPDATE WORKFLOW_CASE_SELECTOR SET TYPE = 'BUILD_LIFE_STATUS_APPLIED_EVENT', SCRIPT = 'true' WHERE ID = -10;
+      ]]></sql>
+    </change>
+    
+    <change number="134">
+      <description>Update Notification Templates to remove context scripting</description>
+      <sql>
+        UPDATE TEMPLATE SET DATA = '<![CDATA[<?xml version="1.0" encoding="UTF-8" standalone="no"?>
+<template>
+<name>Simple IM Template</name>
+<template-text><![CDATA[## BEGIN SECTION Body
+
+#if ( !$workflow )
+#set($workflow = $request.WorkflowCase)
+#end
+#if($workflow.Status.equalsIgnoreCase("Complete"))
+Success
+#else
+$workflow.Status
+#end
+#set($project = $workflow.Project)
+#set($stamp = $workflow.BuildLife.latestStamp())
+$project.Name - $workflow.Name #if($stamp != "") ($stamp) #end
+$workflow.Url
+
+## END SECTION Body]]]]><![CDATA[></template-text>
+<description>A simple example of a velocity template for creating notification IMs for notification service.</description>
+</template>]]>' WHERE ID = -3;;
+      </sql>
+    </change>
+    
+    <change number="135">
+      <description>Add colors to default statuses</description>
+      <sql separator=";">
+        UPDATE STATUS SET COLOR = '#90EE90' WHERE COLOR IS NULL AND ID = -1;
+        UPDATE STATUS SET COLOR = '#FFB6C1' WHERE COLOR IS NULL AND ID = -2;
+        UPDATE STATUS SET COLOR = '#D3D3D3' WHERE COLOR IS NULL AND ID = -3;
+      </sql>
+    </change>
+    
+    <change number="136">
+      <description>Move artifact configurations to the workflow template.</description>
+      <sql separator=";">
+        DROP TABLE BUILD_PROFILE_ARTIFACT_DELIVER;
+        
+        CREATE TABLE WORKFLOW_ARTIFACT_DELIVER (
+            ID                    BIGINT NOT NULL PRIMARY KEY,
+            VERSION               BIGINT DEFAULT 0 NOT NULL,
+            WORKFLOW_TEMPLATE_ID  BIGINT NOT NULL,
+            ARTIFACT_SET_ID       BIGINT NOT NULL,
+            BASE_DIRECTORY        VARCHAR(255),
+            INCLUDE_PATTERNS      CLOB,
+            EXCLUDE_PATTERNS      CLOB
+        );        
+
+        ALTER TABLE WORKFLOW_ARTIFACT_DELIVER ADD CONSTRAINT WAD_WORKFLOW_TEMPLATE_FK
+            FOREIGN KEY (WORKFLOW_TEMPLATE_ID)
+            REFERENCES WORKFLOW_TEMPLATE (ID)
+            ON DELETE CASCADE
+        ;
+        
+        ALTER TABLE WORKFLOW_ARTIFACT_DELIVER ADD CONSTRAINT WAD_ARTIFACT_SET_FK
+            FOREIGN KEY (ARTIFACT_SET_ID)
+            REFERENCES ARTIFACT_SET (ID)
+        ;
+
+        CREATE INDEX WAD_WORKFLOW_TEMPLATE_IX
+            ON WORKFLOW_ARTIFACT_DELIVER(WORKFLOW_TEMPLATE_ID);
+        
+        CREATE INDEX WAD_ARTIFACT_SET_IX
+            ON WORKFLOW_ARTIFACT_DELIVER(ARTIFACT_SET_ID);
+            
+        UPDATE HI_LO_SEQ SET SEQ_NAME = 'WORKFLOW_ARTIFACT_DELIVER'
+        WHERE SEQ_NAME = 'BUILD_PROFILE_ARTIFACT_DELIVER';
+      </sql>
+    </change>
+    
+    <change number="137">
+      <description>Remove Jabber and MSN ID columns. Add in a generic IM ID column.</description>
+      <sql separator=";">
+        ALTER TABLE UBUILD_USER DROP COLUMN MSN_ID;
+        ALTER TABLE UBUILD_USER DROP COLUMN XMPP_ID;
+        ALTER TABLE UBUILD_USER ADD COLUMN IM_ID VARCHAR(255);
+      </sql>
+    </change>
+    
+    <change number="138">
+      <description>Remove Workflow Definition properties</description>
+      <sql separator=";">
+        DROP TABLE WORKFLOW_DEFINITION_PROPERTY;
+      </sql>
+    </change>
+    
+    <change number="139">
+      <description>Rename and remove some resource roles and security actions</description>
+      <sql separator=";">
+        DELETE FROM sec_resource_role_to_action
+            WHERE sec_resource_role_id = '00000000-0000-0000-0000-000000000608'
+            AND sec_action_id = '00000000-0000-0000-0000-000000000052';
+        INSERT INTO sec_resource_role_to_action (sec_resource_role_id, sec_action_id)
+            VALUES('00000000-0000-0000-0000-000000000608', '00000000-0000-0000-0000-000000000052');
+        UPDATE sec_resource_role SET name = 'Agent Pool Read-only', description = 'Read on Agent Pools.' 
+            WHERE id = '00000000-0000-0000-0000-000000000602';
+        UPDATE sec_resource_role SET description = 'Read on Script Groups.' WHERE id = '00000000-0000-0000-0000-000000000608';
+        UPDATE sec_resource_role SET description = 'Read on Request Plans.' WHERE id = '00000000-0000-0000-0000-000000000611';
+        UPDATE sec_resource_role SET description = 'Read on Project Templates.' WHERE id = '00000000-0000-0000-0000-000000000612';
+        UPDATE sec_resource_role SET description = 'Read on Projects.' WHERE id = '00000000-0000-0000-0000-000000000600';
+        DELETE FROM sec_role_action WHERE sec_action_id = '00000000-0000-0000-0000-000000000074';
+        DELETE FROM sec_resource_role_to_action WHERE sec_action_id = '00000000-0000-0000-0000-000000000074';
+        DELETE FROM sec_action WHERE id = '00000000-0000-0000-0000-000000000074';
+      </sql>
+    </change>
+    
+    <change number="140">
+      <description>Fix Workflow Status Change event selector script</description>
+      <sql separator=";">
+        UPDATE WORKFLOW_CASE_SELECTOR SET SCRIPT = 'var result = false
+var prevBuildLife = workflow.getBuildLife().getPrevious()
+if (prevBuildLife == null) {
+    result = true
+}
+else {
+    var prevWorkflowCase = prevBuildLife.getWorkflow()
+    if (prevWorkflowCase == null || !prevWorkflowCase.isComplete() || prevWorkflowCase.statusIsSuccess() != workflow.statusIsSuccess()) {
+        result = true
+    }
+}
+
+result' WHERE ID = -9;
+      </sql>
+    </change>
+    
+    <change number="141">
+      <description>Fix Failure or First Success After Failure event selector script</description>
+      <sql separator=";"><![CDATA[
+        UPDATE WORKFLOW_CASE_SELECTOR SET SCRIPT = 'var result = false
+if (!workflow.statusIsSuccess()) {
+    result = true
+}
+else {
+    var prevBuildLife = workflow.getBuildLife().getPrevious()
+    if (prevBuildLife != null) {
+        var prevWorkflowCase = prevBuildLife.getWorkflow()
+        if (prevWorkflowCase != null && prevWorkflowCase.isComplete() && !prevWorkflowCase.statusIsSuccess() && workflow.statusIsSuccess()) {
+            result = true
+        }
+    }
+}
+
+result' WHERE ID = -8;
+      ]]></sql>
+    </change>
+    
+    <change number="142">
+      <description>Remove Task scripts</description>
+      <sql separator=";">
+        DELETE FROM WORKFLOW_CASE_SELECTOR WHERE ID IN (-4, -5, -6, -7);
+      </sql>
+    </change>
+    
+    <change number="143">
+      <description>Add new notification template that includes a listing of steps</description>
+      <sql>
+        INSERT INTO TEMPLATE(ID, VERSION, CLASS, DATA) VALUES(-4, 0, 'com.urbancode.ubuild.domain.template.Template',
+'<![CDATA[<?xml version="1.0" encoding="UTF-8"?>
+<template>
+<name>Workflow Email Template With Steps</name>
+<template-text><![CDATA[## BEGIN SECTION Subject
+
+#set($project = $workflow.Project)
+#set($stamp = $workflow.BuildLife.latestStamp())
+
+Workflow: 
+#if($stamp != "")
+  $project.Name - $workflow.Name ($stamp):
+#else
+  $project.Name - $workflow.Name:
+#end
+
+#if($workflow.Status.equalsIgnoreCase("Complete"))
+  Success
+#else
+  $workflow.Status
+#end
+
+## END SECTION Subject
+
+## BEGIN SECTION Body
+## PROPERTY Content-Type: text/html
+## PROPERTY X-Priority: 3
+
+<!DOCTYPE html PUBLIC "-//W3C//DTD HTML 4.01 Transitional//EN">
+
+<html>
+
+<head>
+<title>Workflow</title>
+<STYLE TYPE="text/css">
+<!--
+table.data-table td {
+    vertical-align: top;
+}
+
+table.data-table
+{
+    font-family: arial, helvetica, sans-serif;
+    font-size: 12px;
+    background-color: #567596;
+}
+
+table.data-table caption
+{
+    padding-top: 10px;
+    padding-bottom: 10px;
+    text-align: left;
+}
+
+table.data-table th
+{
+    text-align: center;
+    background-color: #cfdbef;
+    height: 25px;
+}
+
+table.data-table td
+{
+    vertical-align: top;
+}
+
+table.data-table tr.odd
+{
+    background-color: #ffffff;
+}
+
+table.data-table tr.even
+{
+    background-color: #f6f6f6;
+}
+
+.data-table-button-bar
+{
+    padding-top: 10px;
+    padding-bottom: 10px;
+}
+
+.data-table-container
+{
+    padding-top: 10px;
+    padding-bottom: 10px;
+}
+-->
+</STYLE>
+</head>
+<body>
+
+<h1> Workflow: $workflow.Name
+</h1>
+
+
+<div class="data-table-container">
+<table class="data-table" cellpadding="4" cellspacing="1" width="100%">
+ <table-body>
+  <tr class="data-table-head">
+    <th scope="col" align="left" valign="middle"><strong>Job Name</strong></th>
+    <th scope="col" align="left" valign="middle"><strong>Agent Name</strong></th>
+    <th scope="col" align="left" valign="middle">Status</strong></th>
+  </tr>
+  #foreach($trace in $workflow.JobTraceList)
+    <tr bgcolor="#ffffff">
+      <td>$trace.Name</td>
+      <td align="center">$trace.Agent</td>
+      #set($status = $trace.Status)
+      <td align="center">
+        #if($trace.statusIsSuccess())
+          <strong style="color: green">
+        #elseif($trace.statusIsFailure())
+          <strong style="color: red">
+        #else
+          <strong style="color: blue">
+        #end
+        $status</strong>
+      </td>
+    </tr>
+
+    #foreach($step in $trace.StepList)
+      <tr bgcolor="#ffffff">
+        <td>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;Step - $step.Name</td>
+        <td align="center">$trace.Agent</td>
+        #set($stepStatus = $step.Status)
+        <td align="center">
+          #if($step.statusIsSuccess())
+            <strong style="color: green">
+          #elseif($step.statusIsFailure())
+            <strong style="color: red">
+          #else
+            <strong style="color: blue">
+          #end
+          $stepStatus</strong>
+        </td>
+      </tr>
+    #end
+  #end
+ </table-body>
+</table>
+
+Additional information available on uBuild here:
+  <a href="$workflow.Url">
+  $workflow.Url</a>
+</div>
+
+</body>
+</html>
+
+## END SECTION Body]]]]><![CDATA[></template-text>
+<description>A simple example of a velocity template for creating notification emails for notification service. This template also includes a listing of steps for each job.</description>
+</template>]]>');;
+      </sql>
+    </change>
+    <change number="144">
+      <description>Add tables for auditing and reporting</description>
+      <sql file="reporting/derby/schema.ddl" separator=";"/>
+      <sql file="reporting/foreign-keys.ddl" separator=";"/>
+      <sql file="reporting/indexes.ddl" separator=";"/>
+      <sql file="reporting/seed-data.sql" separator=";"/>
+      <sql separator=";">
+CREATE TABLE DATE_DIM (
+    ID               VARCHAR(36) NOT NULL PRIMARY KEY,
+    DATE_VAL         VARCHAR(12) NOT NULL,
+    YEAR_NUM         VARCHAR(6) NOT NULL,
+    MONTH            VARCHAR(32) NOT NULL,
+    DAY_OF_WEEK      VARCHAR(1) NOT NULL,
+    DAY_OF_MONTH     VARCHAR(2) NOT NULL
+);
+
+CREATE TABLE TIME_DIM (
+    ID               VARCHAR(36) NOT NULL PRIMARY KEY,
+    TIME_VAL         VARCHAR(8) NOT NULL,
+    HOUR_OF_DAY      VARCHAR(2) NOT NULL,
+    MINUTE_OF_HOUR   VARCHAR(2) NOT NULL,
+    SECOND_OF_MINUTE VARCHAR(2) NOT NULL
+);
+
+CREATE TABLE USER_DIM (
+    ID               VARCHAR(36) NOT NULL PRIMARY KEY,
+    USER_ID          VARCHAR(255) NOT NULL,
+    USER_NAME        VARCHAR(255) NOT NULL,
+    ACTUAL_NAME      VARCHAR(255),
+    EMAIL            VARCHAR(255),
+    IM               VARCHAR(255),
+    AUTH_REALM_ID    VARCHAR(36) NOT NULL,
+    AUTH_REALM_NAME  VARCHAR(255) NOT NULL
+);
+
+CREATE TABLE CONFIG_OBJECT_DIM (
+    ID               VARCHAR(36) NOT NULL PRIMARY KEY,
+    HANDLE           VARCHAR(128) NOT NULL,
+    OBJECT_TYPE      VARCHAR(64) NOT NULL,
+    OBJECT_ID        VARCHAR(36) NOT NULL,
+    OBJECT_NAME      VARCHAR(255) NOT NULL
+);
+
+CREATE TABLE OBJECT_CONFIG_AUDITING (
+    ACTION           VARCHAR(6) NOT NULL,
+    OLD_VALUE        VARCHAR(4000),
+    NEW_VALUE        VARCHAR(4000),
+    DESCRIPTION      VARCHAR(4000),
+    ACTION_USER      VARCHAR(36) NOT NULL,
+    CONFIG_OBJECT    VARCHAR(36) NOT NULL,
+    ACTION_DATE      VARCHAR(36) NOT NULL,
+    ACTION_TIME      VARCHAR(36) NOT NULL
+);
+
+CREATE INDEX OCA_ACTION_USER_IX
+    ON OBJECT_CONFIG_AUDITING(ACTION_USER);
+
+CREATE INDEX OCA_CONFIG_OBJECT_IX
+    ON OBJECT_CONFIG_AUDITING(CONFIG_OBJECT);
+
+CREATE INDEX OCA_ACTION_DATE_IX
+    ON OBJECT_CONFIG_AUDITING(ACTION_DATE);
+
+CREATE INDEX OCA_ACTION_TIME_IX
+    ON OBJECT_CONFIG_AUDITING(ACTION_TIME);
+
+ALTER TABLE OBJECT_CONFIG_AUDITING ADD CONSTRAINT OCA_ACTION_USER_FK
+    FOREIGN KEY (ACTION_USER)
+    REFERENCES USER_DIM (ID)
+;
+
+ALTER TABLE OBJECT_CONFIG_AUDITING ADD CONSTRAINT OCA_CONFIG_OBJECT_FK
+    FOREIGN KEY (CONFIG_OBJECT)
+    REFERENCES CONFIG_OBJECT_DIM (ID)
+;
+
+ALTER TABLE OBJECT_CONFIG_AUDITING ADD CONSTRAINT OCA_ACTION_DATE_FK
+    FOREIGN KEY (ACTION_DATE)
+    REFERENCES DATE_DIM (ID)
+;
+
+ALTER TABLE OBJECT_CONFIG_AUDITING ADD CONSTRAINT OCA_ACTION_TIME_FK
+    FOREIGN KEY (ACTION_TIME)
+    REFERENCES TIME_DIM (ID)
+;
+    
+INSERT INTO REP_DIMENSION (ID, NAME, DESCRIPTION, MUTABLE)
+VALUES ('00000000-0000-0000-0000-000000000001', 'DATE_DIM', 'Date information', 0);
+
+INSERT INTO REP_DIMENSION_COLUMN (PARENT_ID, NAME, DESCRIPTION, NULLABLE, PRIMARY_KEY)
+VALUES ('00000000-0000-0000-0000-000000000001', 'DATE_VAL', 'The formatted date: yyyy-mm-dd', 0, 1);
+INSERT INTO REP_DIMENSION_COLUMN (PARENT_ID, NAME, DESCRIPTION, NULLABLE, PRIMARY_KEY)
+VALUES ('00000000-0000-0000-0000-000000000001', 'YEAR_NUM', 'The numeric year', 0, 0);
+INSERT INTO REP_DIMENSION_COLUMN (PARENT_ID, NAME, DESCRIPTION, NULLABLE, PRIMARY_KEY)
+VALUES ('00000000-0000-0000-0000-000000000001', 'MONTH', 'The numeric month', 0, 0);
+INSERT INTO REP_DIMENSION_COLUMN (PARENT_ID, NAME, DESCRIPTION, NULLABLE, PRIMARY_KEY)
+VALUES ('00000000-0000-0000-0000-000000000001', 'DAY_OF_WEEK', 'The numeric day of the week', 0, 0);
+INSERT INTO REP_DIMENSION_COLUMN (PARENT_ID, NAME, DESCRIPTION, NULLABLE, PRIMARY_KEY)
+VALUES ('00000000-0000-0000-0000-000000000001', 'DAY_OF_MONTH', 'The numeric day of the month', 0, 0);
+
+INSERT INTO REP_DIMENSION (ID, NAME, DESCRIPTION, MUTABLE)
+VALUES ('00000000-0000-0000-0000-000000000002', 'TIME_DIM', 'Time information', 0);
+
+INSERT INTO REP_DIMENSION_COLUMN (PARENT_ID, NAME, DESCRIPTION, NULLABLE, PRIMARY_KEY)
+VALUES ('00000000-0000-0000-0000-000000000002', 'TIME_VAL', 'The formatted time: hh:mm:ss', 0, 1);
+INSERT INTO REP_DIMENSION_COLUMN (PARENT_ID, NAME, DESCRIPTION, NULLABLE, PRIMARY_KEY)
+VALUES ('00000000-0000-0000-0000-000000000002', 'HOUR_OF_DAY', 'The hour in the day: [0-23]', 0, 0);
+INSERT INTO REP_DIMENSION_COLUMN (PARENT_ID, NAME, DESCRIPTION, NULLABLE, PRIMARY_KEY)
+VALUES ('00000000-0000-0000-0000-000000000002', 'MINUTE_OF_HOUR', 'The minute in the hour: [0-59]', 0, 0);
+INSERT INTO REP_DIMENSION_COLUMN (PARENT_ID, NAME, DESCRIPTION, NULLABLE, PRIMARY_KEY)
+VALUES ('00000000-0000-0000-0000-000000000002', 'SECOND_OF_MINUTE', 'The seconds in the minute: [0-59]', 0, 0);
+
+INSERT INTO REP_DIMENSION (ID, NAME, DESCRIPTION, MUTABLE)
+VALUES ('00000000-0000-0000-0000-000000000003', 'USER_DIM', 'User information', 1);
+
+INSERT INTO REP_DIMENSION_COLUMN (PARENT_ID, NAME, DESCRIPTION, NULLABLE, PRIMARY_KEY)
+VALUES ('00000000-0000-0000-0000-000000000003', 'USER_ID', 'The user id', 0, 1);
+INSERT INTO REP_DIMENSION_COLUMN (PARENT_ID, NAME, DESCRIPTION, NULLABLE, PRIMARY_KEY)
+VALUES ('00000000-0000-0000-0000-000000000003', 'USER_NAME', 'The user name', 0, 0);
+INSERT INTO REP_DIMENSION_COLUMN (PARENT_ID, NAME, DESCRIPTION, NULLABLE, PRIMARY_KEY)
+VALUES ('00000000-0000-0000-0000-000000000003', 'ACTUAL_NAME', 'The actual name of the user', 1, 0);
+INSERT INTO REP_DIMENSION_COLUMN (PARENT_ID, NAME, DESCRIPTION, NULLABLE, PRIMARY_KEY)
+VALUES ('00000000-0000-0000-0000-000000000003', 'EMAIL', 'The user email address', 1, 0);
+INSERT INTO REP_DIMENSION_COLUMN (PARENT_ID, NAME, DESCRIPTION, NULLABLE, PRIMARY_KEY)
+VALUES ('00000000-0000-0000-0000-000000000003', 'IM', 'The user IM identifier', 1, 0);
+INSERT INTO REP_DIMENSION_COLUMN (PARENT_ID, NAME, DESCRIPTION, NULLABLE, PRIMARY_KEY)
+VALUES ('00000000-0000-0000-0000-000000000003', 'AUTH_REALM_ID', 'The authentication realm id', 0, 0);
+INSERT INTO REP_DIMENSION_COLUMN (PARENT_ID, NAME, DESCRIPTION, NULLABLE, PRIMARY_KEY)
+VALUES ('00000000-0000-0000-0000-000000000003', 'AUTH_REALM_NAME', 'The authentication realm name', 0, 0);
+
+INSERT INTO REP_DIMENSION (ID, NAME, DESCRIPTION, MUTABLE)
+VALUES ('00000000-0000-0000-0000-000000000004', 'CONFIG_OBJECT_DIM', 'Configuration object information', 1);
+
+INSERT INTO REP_DIMENSION_COLUMN (PARENT_ID, NAME, DESCRIPTION, NULLABLE, PRIMARY_KEY)
+VALUES ('00000000-0000-0000-0000-000000000004', 'HANDLE', 'A unique identifier for the config object. Includes the object type and id.', 0, 1);
+INSERT INTO REP_DIMENSION_COLUMN (PARENT_ID, NAME, DESCRIPTION, NULLABLE, PRIMARY_KEY)
+VALUES ('00000000-0000-0000-0000-000000000004', 'OBJECT_TYPE', 'The type of the configuration object', 0, 0);
+INSERT INTO REP_DIMENSION_COLUMN (PARENT_ID, NAME, DESCRIPTION, NULLABLE, PRIMARY_KEY)
+VALUES ('00000000-0000-0000-0000-000000000004', 'OBJECT_ID', 'The id of the configuration object', 0, 0);
+INSERT INTO REP_DIMENSION_COLUMN (PARENT_ID, NAME, DESCRIPTION, NULLABLE, PRIMARY_KEY)
+VALUES ('00000000-0000-0000-0000-000000000004', 'OBJECT_NAME', 'The name of the configuration object', 0, 0);
+
+INSERT INTO REP_FACT_TABLE (ID, NAME, DESCRIPTION)
+VALUES ('00000000-0000-0000-0000-000000000005', 'OBJECT_CONFIG_AUDITING', 'Auditing records on configuration changes');
+
+INSERT INTO REP_FACT_TABLE_COLUMN (FACT_TABLE_ID, NAME, DESCRIPTION, NULLABLE)
+VALUES ('00000000-0000-0000-0000-000000000005', 'ACTION', 'Either ''create'', ''edit'', or ''delete''', 0);
+INSERT INTO REP_FACT_TABLE_COLUMN (FACT_TABLE_ID, NAME, DESCRIPTION, NULLABLE)
+VALUES ('00000000-0000-0000-0000-000000000005', 'DESCRIPTION', 'A description of the action', 1);
+INSERT INTO REP_FACT_TABLE_COLUMN (FACT_TABLE_ID, NAME, DESCRIPTION, NULLABLE)
+VALUES ('00000000-0000-0000-0000-000000000005', 'OLD_VALUE', 'The valued before the edit', 1);
+INSERT INTO REP_FACT_TABLE_COLUMN (FACT_TABLE_ID, NAME, DESCRIPTION, NULLABLE)
+VALUES ('00000000-0000-0000-0000-000000000005', 'NEW_VALUE', 'The value after the edit', 1);
+INSERT INTO REP_FACT_TABLE_COLUMN (FACT_TABLE_ID, NAME, DESCRIPTION, NULLABLE, DIMENSION_ID)
+VALUES ('00000000-0000-0000-0000-000000000005', 'ACTION_USER', 'The user who performed the action', 0, '00000000-0000-0000-0000-000000000003');
+INSERT INTO REP_FACT_TABLE_COLUMN (FACT_TABLE_ID, NAME, DESCRIPTION, NULLABLE, DIMENSION_ID)
+VALUES ('00000000-0000-0000-0000-000000000005', 'CONFIG_OBJECT', 'The configuration object acted on', 0, '00000000-0000-0000-0000-000000000004');
+INSERT INTO REP_FACT_TABLE_COLUMN (FACT_TABLE_ID, NAME, DESCRIPTION, NULLABLE, DIMENSION_ID)
+VALUES ('00000000-0000-0000-0000-000000000005', 'ACTION_DATE', 'The action date', 0, '00000000-0000-0000-0000-000000000001');
+INSERT INTO REP_FACT_TABLE_COLUMN (FACT_TABLE_ID, NAME, DESCRIPTION, NULLABLE, DIMENSION_ID)
+VALUES ('00000000-0000-0000-0000-000000000005', 'ACTION_TIME', 'The action time', 0, '00000000-0000-0000-0000-000000000002');
+      </sql>
+    </change>
+    <change number="145">
+      <description>Drop old audit tables</description>
+      <sql separator=";">
+      DROP TABLE AUDIT_FLD;
+      DROP TABLE AUDIT_ETY;
+      DROP TABLE AUDIT_TRX;
+      DROP TABLE AUDIT_UOW;
+      </sql>
+    </change>
+    <change number="146">
+      <description>Correct the auditing table configuration for case-sensitive databases</description>
+      <sql separator=";">
+UPDATE REP_DIMENSION SET NAME = 'DATE_DIM' WHERE NAME = 'date_dim';
+
+UPDATE REP_DIMENSION_COLUMN SET NAME = 'DATE_VAL' WHERE NAME = 'date_val';
+UPDATE REP_DIMENSION_COLUMN SET NAME = 'YEAR_NUM' WHERE NAME = 'year_num';
+UPDATE REP_DIMENSION_COLUMN SET NAME = 'MONTH' WHERE NAME = 'month';
+UPDATE REP_DIMENSION_COLUMN SET NAME = 'DAY_OF_WEEK' WHERE NAME = 'day_of_week';
+UPDATE REP_DIMENSION_COLUMN SET NAME = 'DAY_OF_MONTH' WHERE NAME = 'day_of_month';
+
+UPDATE REP_DIMENSION SET NAME = 'TIME_DIM' WHERE NAME = 'time_dim';
+
+UPDATE REP_DIMENSION_COLUMN SET NAME = 'TIME_VAL' WHERE NAME = 'time_val';
+UPDATE REP_DIMENSION_COLUMN SET NAME = 'HOUR_OF_DAY' WHERE NAME = 'hour_of_day';
+UPDATE REP_DIMENSION_COLUMN SET NAME = 'MINUTE_OF_HOUR' WHERE NAME = 'minute_of_hour';
+UPDATE REP_DIMENSION_COLUMN SET NAME = 'SECOND_OF_MINUTE' WHERE NAME = 'second_of_minute';
+
+UPDATE REP_DIMENSION SET NAME = 'USER_DIM' WHERE NAME = 'user_dim';
+
+UPDATE REP_DIMENSION_COLUMN SET NAME = 'USER_ID' WHERE NAME = 'user_id';
+UPDATE REP_DIMENSION_COLUMN SET NAME = 'USER_NAME' WHERE NAME = 'user_name';
+UPDATE REP_DIMENSION_COLUMN SET NAME = 'ACTUAL_NAME' WHERE NAME = 'actual_name';
+UPDATE REP_DIMENSION_COLUMN SET NAME = 'EMAIL' WHERE NAME = 'email';
+UPDATE REP_DIMENSION_COLUMN SET NAME = 'IM' WHERE NAME = 'im';
+UPDATE REP_DIMENSION_COLUMN SET NAME = 'AUTH_REALM_ID' WHERE NAME = 'auth_realm_id';
+UPDATE REP_DIMENSION_COLUMN SET NAME = 'AUTH_REALM_NAME' WHERE NAME = 'auth_realm_name';
+
+UPDATE REP_DIMENSION SET NAME = 'CONFIG_OBJECT_DIM' WHERE NAME = 'config_object_dim';
+
+UPDATE REP_DIMENSION_COLUMN SET NAME = 'HANDLE' WHERE NAME = 'handle';
+UPDATE REP_DIMENSION_COLUMN SET NAME = 'OBJECT_TYPE' WHERE NAME = 'object_type';
+UPDATE REP_DIMENSION_COLUMN SET NAME = 'OBJECT_ID' WHERE NAME = 'object_id';
+UPDATE REP_DIMENSION_COLUMN SET NAME = 'OBJECT_NAME' WHERE NAME = 'object_name';
+
+UPDATE REP_FACT_TABLE SET NAME = 'OBJECT_CONFIG_AUDITING' WHERE NAME = 'object_config_auditing';
+
+UPDATE REP_FACT_TABLE_COLUMN SET NAME = 'ACTION' WHERE NAME = 'action';
+UPDATE REP_FACT_TABLE_COLUMN SET NAME = 'DESCRIPTION' WHERE NAME = 'description';
+UPDATE REP_FACT_TABLE_COLUMN SET NAME = 'OLD_VALUE' WHERE NAME = 'old_value';
+UPDATE REP_FACT_TABLE_COLUMN SET NAME = 'NEW_VALUE' WHERE NAME = 'new_value';
+UPDATE REP_FACT_TABLE_COLUMN SET NAME = 'ACTION_USER' WHERE NAME = 'action_user';
+UPDATE REP_FACT_TABLE_COLUMN SET NAME = 'CONFIG_OBJECT' WHERE NAME = 'config_object';
+UPDATE REP_FACT_TABLE_COLUMN SET NAME = 'ACTION_DATE' WHERE NAME = 'action_date';
+UPDATE REP_FACT_TABLE_COLUMN SET NAME = 'ACTION_TIME' WHERE NAME = 'action_time';
+      </sql>
+    </change>
+    <change number="147">
+      <description>Add a column to store a step's property sheet reference.</description>
+      <sql separator=";">
+      ALTER TABLE JOB_CONFIG_STEP ADD COLUMN PROP_SHEET_ID VARCHAR(36);
+      CREATE INDEX JCS_PROP_SHEET_IX ON JOB_CONFIG_STEP(PROP_SHEET_ID);
+      </sql>
+    </change>
+    <change number="148">
+      <description>Move the property sheet reference from XML to a column.</description>
+      <groovy file="4.0/148_update_plugin_steps.groovy"/>
+    </change>
+    <change number="149">
+      <description>Allow reporting dimensions to be updated.</description>
+      <changeref library="reporting" change="4"/>
+    </change>
+    <change number="150">
+      <description>Update reporting dimensions with update capability flag.</description>
+      <sql separator=";">
+      UPDATE REP_DIMENSION SET MUTABLE = 0 WHERE NAME = 'DATE_DIM';
+      UPDATE REP_DIMENSION SET MUTABLE = 0 WHERE NAME = 'TIME_DIM';
+      UPDATE REP_DIMENSION SET MUTABLE = 1 WHERE NAME = 'USER_DIM';
+      UPDATE REP_DIMENSION SET MUTABLE = 1 WHERE NAME = 'CONFIG_OBJECT_DIM';
+      </sql>
+    </change>
+    <change number="151">
+      <description>Add testing to reporting.</description>
+      <sql separator=";">
+INSERT INTO REP_DIMENSION (ID, NAME, DESCRIPTION, MUTABLE)
+VALUES ('00000000-0000-0000-0000-000000000006', 'PROJECT_TEMPLATE_DIM', 'Project Template', 1);
+
+INSERT INTO REP_DIMENSION_COLUMN (PARENT_ID, NAME, DESCRIPTION, NULLABLE, PRIMARY_KEY)
+VALUES ('00000000-0000-0000-0000-000000000006', 'TEMPLATE_ID', 'The id of the project template.', 0, 1);
+INSERT INTO REP_DIMENSION_COLUMN (PARENT_ID, NAME, DESCRIPTION, NULLABLE, PRIMARY_KEY)
+VALUES ('00000000-0000-0000-0000-000000000006', 'TEMPLATE_NAME', 'The name of the project template.', 0, 0);
+
+CREATE TABLE PROJECT_TEMPLATE_DIM (
+    ID               VARCHAR(36) NOT NULL PRIMARY KEY,
+    TEMPLATE_ID      VARCHAR(36) NOT NULL,
+    TEMPLATE_NAME    VARCHAR(255) NOT NULL
+);
+
+
+INSERT INTO REP_DIMENSION (ID, NAME, DESCRIPTION, MUTABLE)
+VALUES ('00000000-0000-0000-0000-000000000007', 'PROCESS_TEMPLATE_DIM', 'Process Template', 1);
+
+INSERT INTO REP_DIMENSION_COLUMN (PARENT_ID, NAME, DESCRIPTION, NULLABLE, PRIMARY_KEY)
+VALUES ('00000000-0000-0000-0000-000000000007', 'TEMPLATE_ID', 'The id of the process template.', 0, 1);
+INSERT INTO REP_DIMENSION_COLUMN (PARENT_ID, NAME, DESCRIPTION, NULLABLE, PRIMARY_KEY)
+VALUES ('00000000-0000-0000-0000-000000000007', 'TEMPLATE_NAME', 'The name of the process template.', 0, 0);
+INSERT INTO REP_DIMENSION_COLUMN (PARENT_ID, NAME, DESCRIPTION, NULLABLE, DIMENSION_ID)
+VALUES ('00000000-0000-0000-0000-000000000007', 'PROJECT_TEMPLATE', 'The project template of the process template.', 0, '00000000-0000-0000-0000-000000000006');
+
+CREATE TABLE PROCESS_TEMPLATE_DIM (
+    ID               VARCHAR(36) NOT NULL PRIMARY KEY,
+    TEMPLATE_ID      VARCHAR(36) NOT NULL,
+    TEMPLATE_NAME    VARCHAR(255) NOT NULL,
+    PROJECT_TEMPLATE VARCHAR(36) NOT NULL
+);
+CREATE INDEX PTD_PROJECT_TEMPLATE_IX
+    ON PROCESS_TEMPLATE_DIM(PROJECT_TEMPLATE);
+ALTER TABLE PROCESS_TEMPLATE_DIM ADD CONSTRAINT PTD_PROJECT_TEMPLATE_FK
+    FOREIGN KEY (PROJECT_TEMPLATE)
+    REFERENCES PROJECT_TEMPLATE_DIM (ID)
+;
+
+
+INSERT INTO REP_DIMENSION (ID, NAME, DESCRIPTION, MUTABLE)
+VALUES ('00000000-0000-0000-0000-000000000008', 'PROJECT_DIM', 'Project', 1);
+
+INSERT INTO REP_DIMENSION_COLUMN (PARENT_ID, NAME, DESCRIPTION, NULLABLE, PRIMARY_KEY)
+VALUES ('00000000-0000-0000-0000-000000000008', 'PROJECT_ID', 'The id of the project.', 0, 1);
+INSERT INTO REP_DIMENSION_COLUMN (PARENT_ID, NAME, DESCRIPTION, NULLABLE, PRIMARY_KEY)
+VALUES ('00000000-0000-0000-0000-000000000008', 'PROJECT_NAME', 'The name of the project.', 0, 0);
+INSERT INTO REP_DIMENSION_COLUMN (PARENT_ID, NAME, DESCRIPTION, NULLABLE, DIMENSION_ID)
+VALUES ('00000000-0000-0000-0000-000000000008', 'PROJECT_TEMPLATE', 'The project template used by the project.', 0, '00000000-0000-0000-0000-000000000006');
+
+CREATE TABLE PROJECT_DIM (
+    ID               VARCHAR(36) NOT NULL PRIMARY KEY,
+    PROJECT_ID       VARCHAR(36) NOT NULL,
+    PROJECT_NAME     VARCHAR(255) NOT NULL,
+    PROJECT_TEMPLATE VARCHAR(36) NOT NULL
+);
+CREATE INDEX PD_PROJECT_TEMPLATE_IX
+    ON PROJECT_DIM(PROJECT_TEMPLATE);
+ALTER TABLE PROJECT_DIM ADD CONSTRAINT PD_PROJECT_TEMPLATE_FK
+    FOREIGN KEY (PROJECT_TEMPLATE)
+    REFERENCES PROJECT_TEMPLATE_DIM (ID)
+;
+
+
+INSERT INTO REP_DIMENSION (ID, NAME, DESCRIPTION, MUTABLE)
+VALUES ('00000000-0000-0000-0000-000000000009', 'PROCESS_DIM', 'Process', 1);
+
+INSERT INTO REP_DIMENSION_COLUMN (PARENT_ID, NAME, DESCRIPTION, NULLABLE, PRIMARY_KEY)
+VALUES ('00000000-0000-0000-0000-000000000009', 'PROCESS_ID', 'The id of the process.', 0, 1);
+INSERT INTO REP_DIMENSION_COLUMN (PARENT_ID, NAME, DESCRIPTION, NULLABLE, PRIMARY_KEY)
+VALUES ('00000000-0000-0000-0000-000000000009', 'PROCESS_NAME', 'The name of the process.', 0, 0);
+INSERT INTO REP_DIMENSION_COLUMN (PARENT_ID, NAME, DESCRIPTION, NULLABLE, PRIMARY_KEY)
+VALUES ('00000000-0000-0000-0000-000000000009', 'PROCESS_TYPE', 'The type of process. Build or Secondary.', 0, 0);
+INSERT INTO REP_DIMENSION_COLUMN (PARENT_ID, NAME, DESCRIPTION, NULLABLE, DIMENSION_ID)
+VALUES ('00000000-0000-0000-0000-000000000009', 'PROJECT', 'The project the process is in.', 0, '00000000-0000-0000-0000-000000000008');
+INSERT INTO REP_DIMENSION_COLUMN (PARENT_ID, NAME, DESCRIPTION, NULLABLE, DIMENSION_ID)
+VALUES ('00000000-0000-0000-0000-000000000009', 'PROCESS_TEMPLATE', 'The process template used by the process.', 0, '00000000-0000-0000-0000-000000000007');
+
+CREATE TABLE PROCESS_DIM (
+    ID               VARCHAR(36) NOT NULL PRIMARY KEY,
+    PROCESS_ID       VARCHAR(36) NOT NULL,
+    PROCESS_NAME     VARCHAR(255) NOT NULL,
+    PROCESS_TYPE     VARCHAR(12) NOT NULL,
+    PROJECT          VARCHAR(36) NOT NULL,
+    PROCESS_TEMPLATE VARCHAR(36) NOT NULL
+);
+CREATE INDEX PD_PROJECT_IX
+    ON PROCESS_DIM(PROJECT);
+CREATE INDEX PD_PROCESS_TEMPLATE_IX
+    ON PROCESS_DIM(PROCESS_TEMPLATE);
+ALTER TABLE PROCESS_DIM ADD CONSTRAINT PD_PROJECT_FK
+    FOREIGN KEY (PROJECT)
+    REFERENCES PROJECT_DIM (ID)
+;
+ALTER TABLE PROCESS_DIM ADD CONSTRAINT PD_PROCESS_TEMPLATE_FK
+    FOREIGN KEY (PROCESS_TEMPLATE)
+    REFERENCES PROCESS_TEMPLATE_DIM (ID)
+;
+
+
+INSERT INTO REP_DIMENSION (ID, NAME, DESCRIPTION, MUTABLE)
+VALUES ('00000000-0000-0000-0000-000000000010', 'BUILD_LIFE_DIM', 'Build Life', 1);
+
+INSERT INTO REP_DIMENSION_COLUMN (PARENT_ID, NAME, DESCRIPTION, NULLABLE, PRIMARY_KEY)
+VALUES ('00000000-0000-0000-0000-000000000010', 'BUILD_LIFE_ID', 'The id of the build life.', 0, 1);
+INSERT INTO REP_DIMENSION_COLUMN (PARENT_ID, NAME, DESCRIPTION, NULLABLE, DIMENSION_ID)
+VALUES ('00000000-0000-0000-0000-000000000010', 'BUILD_PROCESS', 'The build process of the build life.', 0, '00000000-0000-0000-0000-000000000009');
+INSERT INTO REP_DIMENSION_COLUMN (PARENT_ID, NAME, DESCRIPTION, NULLABLE, DIMENSION_ID)
+VALUES ('00000000-0000-0000-0000-000000000010', 'CREATE_DATE', 'The creation date of the build life.', 0, '00000000-0000-0000-0000-000000000001');
+INSERT INTO REP_DIMENSION_COLUMN (PARENT_ID, NAME, DESCRIPTION, NULLABLE, DIMENSION_ID)
+VALUES ('00000000-0000-0000-0000-000000000010', 'CREATE_TIME', 'The creation time of the build life.', 0, '00000000-0000-0000-0000-000000000002');
+
+CREATE TABLE BUILD_LIFE_DIM (
+    ID               VARCHAR(36) NOT NULL PRIMARY KEY,
+    BUILD_LIFE_ID    VARCHAR(36) NOT NULL,
+    BUILD_PROCESS    VARCHAR(36) NOT NULL,
+    CREATE_DATE      VARCHAR(36) NOT NULL,
+    CREATE_TIME      VARCHAR(36) NOT NULL
+);
+CREATE INDEX BLD_BUILD_PROCESS_IX
+    ON BUILD_LIFE_DIM(BUILD_PROCESS);
+CREATE INDEX BLD_CREATE_DATE_IX
+    ON BUILD_LIFE_DIM(CREATE_DATE);
+CREATE INDEX BLD_CREATE_TIME_IX
+    ON BUILD_LIFE_DIM(CREATE_TIME);
+ALTER TABLE BUILD_LIFE_DIM ADD CONSTRAINT BLD_BUILD_PROCESS_FK
+    FOREIGN KEY (BUILD_PROCESS)
+    REFERENCES PROCESS_DIM (ID)
+;
+ALTER TABLE BUILD_LIFE_DIM ADD CONSTRAINT BLD_CREATE_DATE_FK
+    FOREIGN KEY (CREATE_DATE)
+    REFERENCES DATE_DIM (ID)
+;
+ALTER TABLE BUILD_LIFE_DIM ADD CONSTRAINT BLD_CREATE_TIME_FK
+    FOREIGN KEY (CREATE_TIME)
+    REFERENCES TIME_DIM (ID)
+;
+
+
+INSERT INTO REP_DIMENSION (ID, NAME, DESCRIPTION, MUTABLE)
+VALUES ('00000000-0000-0000-0000-000000000011', 'PROCESS_INSTANCE_DIM', 'Process Instance', 1);
+
+INSERT INTO REP_DIMENSION_COLUMN (PARENT_ID, NAME, DESCRIPTION, NULLABLE, PRIMARY_KEY)
+VALUES ('00000000-0000-0000-0000-000000000011', 'PROCESS_ID', 'The id of the process instance.', 0, 1);
+INSERT INTO REP_DIMENSION_COLUMN (PARENT_ID, NAME, DESCRIPTION, NULLABLE, DIMENSION_ID)
+VALUES ('00000000-0000-0000-0000-000000000011', 'PROCESS', 'The process executed.', 0, '00000000-0000-0000-0000-000000000009');
+INSERT INTO REP_DIMENSION_COLUMN (PARENT_ID, NAME, DESCRIPTION, NULLABLE, DIMENSION_ID)
+VALUES ('00000000-0000-0000-0000-000000000011', 'BUILD_LIFE', 'The build life the process was executed on.', 1, '00000000-0000-0000-0000-000000000010');
+INSERT INTO REP_DIMENSION_COLUMN (PARENT_ID, NAME, DESCRIPTION, NULLABLE, DIMENSION_ID)
+VALUES ('00000000-0000-0000-0000-000000000011', 'REQUEST_DATE', 'The date the process was requested', 0, '00000000-0000-0000-0000-000000000001');
+INSERT INTO REP_DIMENSION_COLUMN (PARENT_ID, NAME, DESCRIPTION, NULLABLE, DIMENSION_ID)
+VALUES ('00000000-0000-0000-0000-000000000011', 'REQUEST_TIME', 'The time the process was requested', 0, '00000000-0000-0000-0000-000000000002');
+INSERT INTO REP_DIMENSION_COLUMN (PARENT_ID, NAME, DESCRIPTION, NULLABLE, DIMENSION_ID)
+VALUES ('00000000-0000-0000-0000-000000000011', 'START_DATE', 'The date the process started', 0, '00000000-0000-0000-0000-000000000001');
+INSERT INTO REP_DIMENSION_COLUMN (PARENT_ID, NAME, DESCRIPTION, NULLABLE, DIMENSION_ID)
+VALUES ('00000000-0000-0000-0000-000000000011', 'START_TIME', 'The time the process started', 0, '00000000-0000-0000-0000-000000000002');
+INSERT INTO REP_DIMENSION_COLUMN (PARENT_ID, NAME, DESCRIPTION, NULLABLE, DIMENSION_ID)
+VALUES ('00000000-0000-0000-0000-000000000011', 'END_DATE', 'The date the process ended', 0, '00000000-0000-0000-0000-000000000001');
+INSERT INTO REP_DIMENSION_COLUMN (PARENT_ID, NAME, DESCRIPTION, NULLABLE, DIMENSION_ID)
+VALUES ('00000000-0000-0000-0000-000000000011', 'END_TIME', 'The time the process ended', 0, '00000000-0000-0000-0000-000000000002');
+INSERT INTO REP_DIMENSION_COLUMN (PARENT_ID, NAME, DESCRIPTION, NULLABLE, DIMENSION_ID)
+VALUES ('00000000-0000-0000-0000-000000000011', 'REQUEST_USER', 'The user who requested the process', 0, '00000000-0000-0000-0000-000000000003');
+INSERT INTO REP_DIMENSION_COLUMN (PARENT_ID, NAME, DESCRIPTION, NULLABLE, PRIMARY_KEY)
+VALUES ('00000000-0000-0000-0000-000000000011', 'REQUEST_SOURCE', 'The type of request source.', 0, 0);
+INSERT INTO REP_DIMENSION_COLUMN (PARENT_ID, NAME, DESCRIPTION, NULLABLE, PRIMARY_KEY)
+VALUES ('00000000-0000-0000-0000-000000000011', 'DURATION', 'The duration of the process in seconds.', 0, 0);
+INSERT INTO REP_DIMENSION_COLUMN (PARENT_ID, NAME, DESCRIPTION, NULLABLE, PRIMARY_KEY)
+VALUES ('00000000-0000-0000-0000-000000000011', 'RESULT', 'The result of the process.', 0, 0);
+
+CREATE TABLE PROCESS_INSTANCE_DIM (
+    ID               VARCHAR(36) NOT NULL PRIMARY KEY,
+    PROCESS_ID       VARCHAR(36) NOT NULL,
+    PROCESS          VARCHAR(36) NOT NULL,
+    BUILD_LIFE       VARCHAR(36) NOT NULL,
+    REQUEST_DATE     VARCHAR(36) NOT NULL,
+    REQUEST_TIME     VARCHAR(36) NOT NULL,
+    START_DATE       VARCHAR(36) NOT NULL,
+    START_TIME       VARCHAR(36) NOT NULL,
+    END_DATE         VARCHAR(36) NOT NULL,
+    END_TIME         VARCHAR(36) NOT NULL,
+    REQUEST_USER     VARCHAR(36) NOT NULL,
+    REQUEST_SOURCE   VARCHAR(10) NOT NULL,
+    DURATION         VARCHAR(20) NOT NULL,
+    RESULT           VARCHAR(10) NOT NULL
+);
+CREATE INDEX PID_PROCESS_IX
+    ON PROCESS_INSTANCE_DIM(PROCESS);
+CREATE INDEX PID_BUILD_LIFE_IX
+    ON PROCESS_INSTANCE_DIM(BUILD_LIFE);
+CREATE INDEX PID_REQUEST_DATE_IX
+    ON PROCESS_INSTANCE_DIM(REQUEST_DATE);
+CREATE INDEX PID_REQUEST_TIME_IX
+    ON PROCESS_INSTANCE_DIM(REQUEST_TIME);
+CREATE INDEX PID_START_DATE_IX
+    ON PROCESS_INSTANCE_DIM(START_DATE);
+CREATE INDEX PID_START_TIME_IX
+    ON PROCESS_INSTANCE_DIM(START_TIME);
+CREATE INDEX PID_END_DATE_IX
+    ON PROCESS_INSTANCE_DIM(END_DATE);
+CREATE INDEX PID_END_TIME_IX
+    ON PROCESS_INSTANCE_DIM(END_TIME);
+CREATE INDEX PID_REQUEST_USER_IX
+    ON PROCESS_INSTANCE_DIM(REQUEST_USER);
+ALTER TABLE PROCESS_INSTANCE_DIM ADD CONSTRAINT PID_PROCESS_FK
+    FOREIGN KEY (PROCESS)
+    REFERENCES PROCESS_DIM (ID)
+;
+ALTER TABLE PROCESS_INSTANCE_DIM ADD CONSTRAINT PID_BUILD_LIFE_FK
+    FOREIGN KEY (BUILD_LIFE)
+    REFERENCES BUILD_LIFE_DIM (ID)
+;
+ALTER TABLE PROCESS_INSTANCE_DIM ADD CONSTRAINT PID_REQUEST_DATE_FK
+    FOREIGN KEY (REQUEST_DATE)
+    REFERENCES DATE_DIM (ID)
+;
+ALTER TABLE PROCESS_INSTANCE_DIM ADD CONSTRAINT PID_REQUEST_TIME_FK
+    FOREIGN KEY (REQUEST_TIME)
+    REFERENCES TIME_DIM (ID)
+;
+ALTER TABLE PROCESS_INSTANCE_DIM ADD CONSTRAINT PID_START_DATE_FK
+    FOREIGN KEY (START_DATE)
+    REFERENCES DATE_DIM (ID)
+;
+ALTER TABLE PROCESS_INSTANCE_DIM ADD CONSTRAINT PID_START_TIME_FK
+    FOREIGN KEY (START_TIME)
+    REFERENCES TIME_DIM (ID)
+;
+ALTER TABLE PROCESS_INSTANCE_DIM ADD CONSTRAINT PID_END_DATE_FK
+    FOREIGN KEY (END_DATE)
+    REFERENCES DATE_DIM (ID)
+;
+ALTER TABLE PROCESS_INSTANCE_DIM ADD CONSTRAINT PID_END_TIME_FK
+    FOREIGN KEY (END_TIME)
+    REFERENCES TIME_DIM (ID)
+;
+ALTER TABLE PROCESS_INSTANCE_DIM ADD CONSTRAINT PID_REQUEST_USER_FK
+    FOREIGN KEY (REQUEST_USER)
+    REFERENCES USER_DIM (ID)
+;
+
+
+INSERT INTO REP_DIMENSION (ID, NAME, DESCRIPTION, MUTABLE)
+VALUES ('00000000-0000-0000-0000-000000000012', 'TEST_DIM', 'Test', 1);
+
+INSERT INTO REP_DIMENSION_COLUMN (PARENT_ID, NAME, DESCRIPTION, NULLABLE, PRIMARY_KEY)
+VALUES ('00000000-0000-0000-0000-000000000012', 'TEST_ID', 'The id of the test.', 0, 1);
+INSERT INTO REP_DIMENSION_COLUMN (PARENT_ID, NAME, DESCRIPTION, NULLABLE, PRIMARY_KEY)
+VALUES ('00000000-0000-0000-0000-000000000012', 'TEST_NAME', 'The test name.', 0, 0);
+INSERT INTO REP_DIMENSION_COLUMN (PARENT_ID, NAME, DESCRIPTION, NULLABLE, PRIMARY_KEY)
+VALUES ('00000000-0000-0000-0000-000000000012', 'TEST_SUITE', 'The test suite.', 1, 0);
+INSERT INTO REP_DIMENSION_COLUMN (PARENT_ID, NAME, DESCRIPTION, NULLABLE, PRIMARY_KEY)
+VALUES ('00000000-0000-0000-0000-000000000012', 'TEST_TYPE', 'The test type.', 0, 0);
+
+CREATE TABLE TEST_DIM (
+    ID               VARCHAR(36) NOT NULL PRIMARY KEY,
+    TEST_ID          VARCHAR(2000) NOT NULL,
+    TEST_NAME        VARCHAR(512) NOT NULL,
+    TEST_SUITE       VARCHAR(512) NOT NULL,
+    TEST_TYPE        VARCHAR(20) NOT NULL
+);
+
+
+INSERT INTO REP_DIMENSION (ID, NAME, DESCRIPTION, MUTABLE)
+VALUES ('00000000-0000-0000-0000-000000000013', 'TEST_REPORT_DIM', 'Test Report', 1);
+
+INSERT INTO REP_DIMENSION_COLUMN (PARENT_ID, NAME, DESCRIPTION, NULLABLE, PRIMARY_KEY)
+VALUES ('00000000-0000-0000-0000-000000000013', 'REPORT_ID', 'The id of the report.', 0, 1);
+INSERT INTO REP_DIMENSION_COLUMN (PARENT_ID, NAME, DESCRIPTION, NULLABLE, PRIMARY_KEY)
+VALUES ('00000000-0000-0000-0000-000000000013', 'REPORT_NAME', 'The report name.', 0, 0);
+INSERT INTO REP_DIMENSION_COLUMN (PARENT_ID, NAME, DESCRIPTION, NULLABLE, DIMENSION_ID)
+VALUES ('00000000-0000-0000-0000-000000000013', 'BUILD_LIFE', 'The build life the report is on.', 0, '00000000-0000-0000-0000-000000000010');
+INSERT INTO REP_DIMENSION_COLUMN (PARENT_ID, NAME, DESCRIPTION, NULLABLE, DIMENSION_ID)
+VALUES ('00000000-0000-0000-0000-000000000013', 'REPORT_DATE', 'The date of the report.', 0, '00000000-0000-0000-0000-000000000001');
+INSERT INTO REP_DIMENSION_COLUMN (PARENT_ID, NAME, DESCRIPTION, NULLABLE, DIMENSION_ID)
+VALUES ('00000000-0000-0000-0000-000000000013', 'REPORT_TIME', 'The time of the report.', 0, '00000000-0000-0000-0000-000000000002');
+
+CREATE TABLE TEST_REPORT_DIM (
+    ID               VARCHAR(36) NOT NULL PRIMARY KEY,
+    REPORT_ID        VARCHAR(300) NOT NULL,
+    REPORT_NAME      VARCHAR(255) NOT NULL,
+    BUILD_LIFE       VARCHAR(36) NOT NULL,
+    REPORT_DATE      VARCHAR(36) NOT NULL,
+    REPORT_TIME      VARCHAR(36) NOT NULL
+);
+CREATE INDEX TRD_BUILD_LIFE_IX
+    ON TEST_REPORT_DIM(BUILD_LIFE);
+CREATE INDEX TRD_REPORT_DATE_IX
+    ON TEST_REPORT_DIM(REPORT_DATE);
+CREATE INDEX TRD_REPORT_TIME_IX
+    ON TEST_REPORT_DIM(REPORT_TIME);
+ALTER TABLE TEST_REPORT_DIM ADD CONSTRAINT TRD_BUILD_LIFE_FK
+    FOREIGN KEY (BUILD_LIFE)
+    REFERENCES BUILD_LIFE_DIM (ID)
+;
+ALTER TABLE TEST_REPORT_DIM ADD CONSTRAINT TRD_REPORT_DATE_FK
+    FOREIGN KEY (REPORT_DATE)
+    REFERENCES DATE_DIM (ID)
+;
+ALTER TABLE TEST_REPORT_DIM ADD CONSTRAINT TRD_REPORT_TIME_FK
+    FOREIGN KEY (REPORT_TIME)
+    REFERENCES TIME_DIM (ID)
+;
+
+
+INSERT INTO REP_FACT_TABLE (ID, NAME, DESCRIPTION)
+VALUES ('00000000-0000-0000-0000-000000000014', 'TEST_INSTANCE', 'Test execution in a build life process');
+
+INSERT INTO REP_FACT_TABLE_COLUMN (FACT_TABLE_ID, NAME, DESCRIPTION, NULLABLE, DIMENSION_ID)
+VALUES ('00000000-0000-0000-0000-000000000014', 'TEST', 'The test executed.', 0, '00000000-0000-0000-0000-000000000012');
+INSERT INTO REP_FACT_TABLE_COLUMN (FACT_TABLE_ID, NAME, DESCRIPTION, NULLABLE, DIMENSION_ID)
+VALUES ('00000000-0000-0000-0000-000000000014', 'REPORT', 'The report the test executed in.', 0, '00000000-0000-0000-0000-000000000013');
+INSERT INTO REP_FACT_TABLE_COLUMN (FACT_TABLE_ID, NAME, DESCRIPTION, NULLABLE)
+VALUES ('00000000-0000-0000-0000-000000000014', 'RESULT', 'The test result. Usually ''success'' or ''failure''.', 0);
+INSERT INTO REP_FACT_TABLE_COLUMN (FACT_TABLE_ID, NAME, DESCRIPTION, NULLABLE)
+VALUES ('00000000-0000-0000-0000-000000000014', 'DURATION', 'The duration of the test in milliseconds.', 1);
+INSERT INTO REP_FACT_TABLE_COLUMN (FACT_TABLE_ID, NAME, DESCRIPTION, NULLABLE)
+VALUES ('00000000-0000-0000-0000-000000000014', 'MESSAGE', 'A test message that may describe the failure.', 1);
+
+CREATE TABLE TEST_INSTANCE (
+    TEST             VARCHAR(36) NOT NULL,
+    REPORT           VARCHAR(36) NOT NULL,
+    RESULT           VARCHAR(10) NOT NULL,
+    DURATION         VARCHAR(20),
+    MESSAGE          CLOB
+);
+CREATE INDEX TI_TEST_IX
+    ON TEST_INSTANCE(TEST);
+CREATE INDEX TI_REPORT_IX
+    ON TEST_INSTANCE(REPORT);
+ALTER TABLE TEST_INSTANCE ADD CONSTRAINT TI_TEST_FK
+    FOREIGN KEY (TEST)
+    REFERENCES TEST_DIM (ID)
+;
+ALTER TABLE TEST_INSTANCE ADD CONSTRAINT TI_REPORT_FK
+    FOREIGN KEY (REPORT)
+    REFERENCES TEST_REPORT_DIM (ID)
+;
+      </sql>
+    </change>
+    <change number="152">
+      <description>Adjust the process and process template reporting tables.</description>
+      <sql separator=";">
+      ALTER TABLE PROCESS_TEMPLATE_DIM ADD COLUMN PROCESS_TYPE VARCHAR(12);
+      UPDATE PROCESS_TEMPLATE_DIM SET PROCESS_TYPE = (SELECT DISTINCT PROCESS_TYPE FROM PROCESS_DIM WHERE PROCESS_TEMPLATE = PROCESS_TEMPLATE_DIM.ID);
+      ALTER TABLE PROCESS_TEMPLATE_DIM ALTER COLUMN PROCESS_TYPE NOT NULL;
+      ALTER TABLE PROCESS_DIM DROP COLUMN PROCESS_TYPE;
+      UPDATE REP_DIMENSION_COLUMN SET PARENT_ID = '00000000-0000-0000-0000-000000000007'
+      WHERE PARENT_ID = '00000000-0000-0000-0000-000000000009' AND NAME = 'PROCESS_TYPE';
+      UPDATE PROCESS_TEMPLATE_DIM SET PROCESS_TYPE = 'Build' WHERE PROCESS_TYPE = 'Originating';
+      </sql>
+    </change>
+    <change number="153">
+      <description>Migrate existing test report data.</description>
+      <groovy file="4.0/153_migrate_test_data.groovy"/>
+    </change>
+    <change number="154">
+      <description>Remove old test tables.</description>
+      <sql separator=";">
+      DROP TABLE TEST_CASE;
+      DROP TABLE TEST_SUITE;
+      DROP TABLE TEST_REPORT;
+      </sql>
+    </change>
+    <change number="155">
+      <description>Remove properties that are lingering on processes even after deletion from the template</description>
+      <sql separator=";">
+      DELETE FROM WORKFLOW_PROP WHERE WORKFLOW_PROP.NAME NOT IN (
+        SELECT PT.NAME
+        FROM PROPERTY_TEMPLATE PT
+        JOIN WORKFLOW_TEMPLATE WT ON WT.ID = PT.OWNER_ID
+        JOIN WORKFLOW W ON W.WORKFLOW_TEMPLATE_ID = WT.ID
+        WHERE PT.OWNER_CLASS = 'com.urbancode.ubuild.domain.workflow.template.WorkflowTemplate'
+        AND W.ID = WORKFLOW_PROP.WORKFLOW_ID
+      )
+      </sql>
+    </change>
+</change-set>

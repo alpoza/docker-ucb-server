@@ -1,0 +1,24 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!--
+- Licensed Materials - Property of IBM Corp.
+- IBM UrbanCode Build
+- (c) Copyright IBM Corporation 2012, 2014. All Rights Reserved.
+-
+- U.S. Government Users Restricted Rights - Use, duplication or disclosure restricted by
+- GSA ADP Schedule Contract with IBM Corp.
+-->
+
+<site>
+  <description>IBM UrbanCode Build Eclipse Integrations</description>
+
+  <category-def name="IBM UrbanCode Build" label="IBM UrbanCode Build Integration Plugins"/>
+
+  <feature
+    url="features/com.urbancode.ubuild_6.1.1.682515.jar"
+    id="com.urbancode.ubuild"
+    version="6.1.1.682515"
+    nl="en_US">
+    <category name="IBM UrbanCode Build"/>
+  </feature>
+
+</site>

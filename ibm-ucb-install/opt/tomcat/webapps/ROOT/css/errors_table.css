@@ -1,0 +1,62 @@
+/*
+* Licensed Materials - Property of IBM Corp.
+* IBM UrbanCode Build
+* (c) Copyright IBM Corporation 2012, 2014. All Rights Reserved.
+*
+* U.S. Government Users Restricted Rights - Use, duplication or disclosure restricted by
+* GSA ADP Schedule Contract with IBM Corp.
+*/
+.errors {
+    border: 1px solid #E29393;
+    background-color: white;
+    
+    font-family: arial, helvetica, sans-serif;
+    font-size: 11px;
+    color: #808080;
+
+    overflow-y: hidden;
+    position: relative;
+    overflow: auto;
+    width: 100%; /* no horizontal scroll should appear on IE */
+	-webkit-box-shadow: 0px 0px 5px 1px rgba(0, 0, 0, .15);
+	box-shadow: 0px 0px 5px 1px rgba(0, 0, 0, .15);
+}
+
+.errors_header {
+    border-bottom: 1px solid #E29393;
+    background-color: #E29393;
+    font-size: 12px;
+    font-weight: bold;
+    color: white;
+    padding: 5px;
+}
+
+.errors_body {
+	margin-right: 0px;
+    padding-top: 4px;
+    padding-left: 4px;
+    padding-bottom: 4px;
+	background-color:#FFF3F3
+}
+
+.errors_section {
+    margin-left: 15px;
+    padding-top: 4px;
+    padding-left: 4px;
+    padding-bottom: 4px;
+}
+
+.errors_output {
+    margin-top: 4px;
+    margin-left: 15px;
+    padding-top: 4px;
+    padding-left: 4px;
+    padding-bottom: 4px;
+    
+    white-space: pre-wrap;       /* css-3 */
+		white-space: -moz-pre-wrap !important;  /* Mozilla, since 1999 */
+		white-space: -pre-wrap;      /* Opera 4-6 */
+		white-space: -o-pre-wrap;    /* Opera 7 */
+		word-wrap: break-word;       /* Internet Explorer 5.5+ */
+		width: 97%; /* no horizontal scroll should appear on IE */
+}

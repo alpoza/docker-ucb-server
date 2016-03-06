@@ -1,0 +1,412 @@
+<?xml version="1.0"?>
+<!--
+- Licensed Materials - Property of IBM Corp.
+- IBM UrbanCode Build
+- (c) Copyright IBM Corporation 2012, 2014. All Rights Reserved.
+-
+- U.S. Government Users Restricted Rights - Use, duplication or disclosure restricted by
+- GSA ADP Schedule Contract with IBM Corp.
+-->
+
+<change-set release="4.2">
+    <library name="plugin-server"
+        release="1.0"
+        base-dir="plugin-server"
+        file="plugin-server/oracle/upgrade_sql_1.0.xml"
+        version-table="pl_db_version"
+        release-column="release_name"
+        version-column="ver"/>
+    />
+    <library name="property-sheets"
+        release="1.0"
+        base-dir="property-sheets"
+        file="property-sheets/oracle/upgrade_sql_1.0.xml"
+        version-table="ps_db_version"
+        release-column="release_name"
+        version-column="ver"/>
+    />
+    <library name="reporting"
+        release="4.0"
+        base-dir="reporting"
+        file="reporting/oracle/upgrade_sql_4.0.xml"
+        version-table="REPORT_DB_VERSION"
+        release-column="RELEASE_NAME"
+        version-column="VER"/>
+    />
+    <library name="security"
+        release="1.0"
+        base-dir="security"
+        file="security/oracle/upgrade_1.0.xml"
+        version-table="sec_db_version"
+        release-column="release_name"
+        version-column="ver"/>
+    />
+    
+    <change number="1">
+        <description>Change size and nullity of change set properties.</description>
+        <sql separator=";">
+            ALTER TABLE CHANGE_SET_PROPERTY MODIFY PROP_VALUE VARCHAR2(4000) NULL;
+        </sql>
+    </change>
+    <change number="2">
+        <description>Change pre-processing numbers from milliseconds to seconds.</description>
+        <groovy file="4.2/ub_002_change_preprocessing_numerics.groovy"/>
+    </change>
+    <change number="3">
+      <description>Adding Build Configurations</description>
+      <sql separator=";">
+            CREATE TABLE BUILD_CONFIGURATION (
+                ID                      NUMERIC NOT NULL PRIMARY KEY,
+                VERSION                 NUMERIC DEFAULT 0 NOT NULL,
+                NAME                    VARCHAR2(255),
+                DESCRIPTION             VARCHAR2(4000),
+                BUILD_PROFILE_ID        NUMERIC NOT NULL,
+                PROP_SHEET_ID           VARCHAR2(36) NOT NULL,
+                INACTIVE                NUMERIC DEFAULT 0 NOT NULL,
+                CONSTRAINT BC_NAME_PROFILE_UC UNIQUE(NAME, BUILD_PROFILE_ID)
+            );
+
+            ALTER TABLE BUILD_CONFIGURATION ADD CONSTRAINT BC_BUILD_PROFILE_FK
+                FOREIGN KEY (BUILD_PROFILE_ID)
+                REFERENCES BUILD_PROFILE (ID)
+            ;
+
+            CREATE INDEX BC_BUILD_PROFILE_IX
+                ON BUILD_CONFIGURATION(BUILD_PROFILE_ID);
+
+            INSERT INTO HI_LO_SEQ (SEQ_NAME, HI_VAL)
+                VALUES ('BUILD_CONFIGURATION', 0);
+
+            ALTER TABLE BUILD_REQUEST ADD BUILD_CONFIGURATION_ID NUMERIC DEFAULT NULL;
+
+            ALTER TABLE BUILD_REQUEST ADD CONSTRAINT BR_BUILD_CONFIGURATION_FK
+                FOREIGN KEY (BUILD_CONFIGURATION_ID)
+                REFERENCES BUILD_CONFIGURATION (ID)
+            ;
+
+            CREATE INDEX BR_BUILD_CONFIGURATION_IX
+                ON BUILD_REQUEST(BUILD_CONFIGURATION_ID);
+      </sql>
+    </change>
+    <change number="4">
+      <description>Add Build Configurations to Reporting</description>
+      <sql separator=";">
+        INSERT INTO REP_DIMENSION (ID, NAME, DESCRIPTION, MUTABLE)
+        VALUES ('00000000-0000-0000-0000-000000000030', 'BUILD_CONFIG_DIM', 'Build Configuration', 1);
+
+        INSERT INTO REP_DIMENSION_COLUMN (PARENT_ID, NAME, DESCRIPTION, NULLABLE, PRIMARY_KEY)
+        VALUES ('00000000-0000-0000-0000-000000000030', 'BUILD_CONFIG_ID', 'The id of the build configuration', 0, 1);
+        INSERT INTO REP_DIMENSION_COLUMN (PARENT_ID, NAME, DESCRIPTION, NULLABLE, PRIMARY_KEY)
+        VALUES ('00000000-0000-0000-0000-000000000030', 'BUILD_CONFIG_NAME', 'The name of the build configuration', 0, 0);
+
+        CREATE TABLE BUILD_CONFIG_DIM (
+            ID                     VARCHAR2(36) NOT NULL PRIMARY KEY,
+            BUILD_CONFIG_ID        VARCHAR2(36) NOT NULL,
+            BUILD_CONFIG_NAME      VARCHAR2(255) NOT NULL
+        );
+
+
+        ALTER TABLE BUILD_LIFE_DIM ADD BUILD_CONFIGURATION VARCHAR2(36) DEFAULT NULL;
+
+        INSERT INTO REP_DIMENSION_COLUMN (PARENT_ID, NAME, DESCRIPTION, NULLABLE, DIMENSION_ID)
+        VALUES ('00000000-0000-0000-0000-000000000010', 'BUILD_CONFIGURATION', 'The build configuration optionally applied on this build life', 1, '00000000-0000-0000-0000-000000000030');
+
+        ALTER TABLE BUILD_LIFE_DIM ADD CONSTRAINT BLD_BUILD_CONFIGURATION_FK
+            FOREIGN KEY (BUILD_CONFIGURATION)
+            REFERENCES BUILD_CONFIG_DIM(ID)
+        ;
+
+        CREATE INDEX BLD_BUILD_CONFIGURATION_IX
+            ON BUILD_LIFE_DIM(BUILD_CONFIGURATION);
+      </sql>
+    </change>
+    <change number="5">
+      <description>Add Dashboards</description>
+      <sql separator=";">
+        CREATE TABLE DASHBOARD_COLUMN (
+            ID                     NUMERIC NOT NULL PRIMARY KEY,
+            VERSION                NUMERIC DEFAULT 0 NOT NULL,
+            VIEW_ID                NUMERIC NOT NULL,
+            VIEW_INDEX             NUMERIC NOT NULL
+        );
+        
+        CREATE TABLE DASHBOARD_VIEW (
+            ID                     NUMERIC NOT NULL PRIMARY KEY,
+            VERSION                NUMERIC DEFAULT 0 NOT NULL,
+            NAME                   VARCHAR2(255)
+        );
+        
+        CREATE TABLE DASHBOARD_WIDGET (
+            ID                     NUMERIC NOT NULL PRIMARY KEY,
+            VERSION                NUMERIC DEFAULT 0 NOT NULL,
+            NAME                   VARCHAR2(255),
+            WIDGET_TYPE            VARCHAR2(16) NOT NULL,
+            PROP_SHEET_ID          VARCHAR2(36) NOT NULL,
+            COLUMN_ID              NUMERIC NOT NULL,
+            COLUMN_INDEX           NUMERIC NOT NULL
+        );
+
+        ALTER TABLE DASHBOARD_COLUMN ADD CONSTRAINT DC_DASHBOARD_VIEW_FK
+            FOREIGN KEY (VIEW_ID)
+            REFERENCES DASHBOARD_VIEW(ID)
+            ON DELETE CASCADE
+        ;
+
+        ALTER TABLE DASHBOARD_WIDGET ADD CONSTRAINT DW_DASHBOARD_COLUMN_FK
+            FOREIGN KEY (COLUMN_ID)
+            REFERENCES DASHBOARD_COLUMN(ID)
+            ON DELETE CASCADE
+        ;
+      </sql>
+    </change>
+    <change number="6">
+      <description>Create dashboard table sequences</description>
+      <sql separator=";">
+      INSERT INTO HI_LO_SEQ (SEQ_NAME, HI_VAL) VALUES ('DASHBOARD_VIEW', 1);
+      INSERT INTO HI_LO_SEQ (SEQ_NAME, HI_VAL) VALUES ('DASHBOARD_COLUMN', 1);
+      INSERT INTO HI_LO_SEQ (SEQ_NAME, HI_VAL) VALUES ('DASHBOARD_WIDGET', 1);
+      </sql>
+    </change>
+    <change number="7">
+      <description>Create the empty Default dashboard</description>
+      <sql separator=";">
+      INSERT INTO DASHBOARD_VIEW (ID, VERSION, NAME) VALUES (-1, 0, 'Default');
+      INSERT INTO DASHBOARD_COLUMN (ID, VERSION, VIEW_ID, VIEW_INDEX) VALUES (-1, 0, -1, 0);
+      INSERT INTO DASHBOARD_COLUMN (ID, VERSION, VIEW_ID, VIEW_INDEX) VALUES (-2, 0, -1, 1);
+      </sql>
+    </change>
+    <change number="8">
+      <description>Remove obsolete command table.</description>
+      <sql separator=";">
+      DROP TABLE JOB_STEP_CMD_TRACE;
+      </sql>
+    </change>
+    <change number="9">
+      <description>Add Scripts Administration security permission</description>
+      <sql separator=";">
+        INSERT INTO sec_action (id, version, name, description, enabled, cascading, sec_resource_type_id)
+            VALUES ('00000000-0000-0000-0000-000000000102', 0, 'Scripts Administration', 'Ability to view, create, and use scripts. This is required for users to view workflow configurations that use scripts.', 1, 0, '00000000-0000-0000-0000-000000100022');
+      </sql>
+    </change>
+    <change number="10">
+      <description>Update roles to use Scripts Administration</description>
+      <groovy file="4.2/ub_010_update_scripts_edit_from_roles.groovy"/>
+      <sql separator=";">
+        DELETE FROM sec_role_action WHERE sec_action_id='00000000-0000-0000-0000-000000000052';
+        DELETE FROM sec_role_action WHERE sec_action_id='00000000-0000-0000-0000-000000000053';
+        DELETE FROM sec_role_action WHERE sec_action_id='00000000-0000-0000-0000-000000000095';
+      </sql>
+    </change>
+    <change number="11">
+      <description>Update resource roles to use Scripts Administration</description>
+      <sql separator=";">
+        DELETE FROM sec_resource_role_to_action WHERE sec_action_id='00000000-0000-0000-0000-000000000052';
+        DELETE FROM sec_resource_role_to_action WHERE sec_action_id='00000000-0000-0000-0000-000000000053';
+        DELETE FROM sec_resource_role_to_action WHERE sec_action_id='00000000-0000-0000-0000-000000000095';
+      </sql>
+    </change>
+    <change number="12">
+      <description>Remove old Scripts View, Scripts Create, and Scripts Edit security actions</description>
+      <sql separator=";">
+        DELETE FROM sec_action WHERE id='00000000-0000-0000-0000-000000000052';
+        DELETE FROM sec_action WHERE id='00000000-0000-0000-0000-000000000053';
+        DELETE FROM sec_action WHERE id='00000000-0000-0000-0000-000000000095';
+      </sql>
+    </change>
+    <change number="13">
+      <description>Remove script groups from the security resources table and resource types table</description>
+      <groovy file="4.2/ub_013_remove_script_groups_from_sec_resource_for_team.groovy"/>
+      <sql separator=";">
+        DELETE FROM sec_resource WHERE sec_resource_type_id='00000000-0000-0000-0000-000000000013';
+        DELETE FROM sec_resource_role WHERE sec_resource_type_id='00000000-0000-0000-0000-000000000013';
+        DELETE FROM sec_resource_type WHERE id='00000000-0000-0000-0000-000000000013';
+      </sql>
+    </change>
+    <change number="14">
+      <description>Remove Script Groups from the database</description>
+      <sql separator=";">
+        ALTER TABLE JOB_PRE_CONDITION_SCRIPT DROP CONSTRAINT JPCS_SCRIPT_GROUP_FK;
+        ALTER TABLE POST_PROCESS_SCRIPT DROP CONSTRAINT PPS_SCRIPT_GROUP_FK;
+        ALTER TABLE SCRIPT DROP CONSTRAINT ES_SCRIPT_GROUP_FK;
+        ALTER TABLE WORK_DIR_SCRIPT DROP CONSTRAINT WDS_SCRIPT_GROUP_FK;
+        ALTER TABLE WORKFLOW_PRIORITY_SCRIPT DROP CONSTRAINT WPS_SCRIPT_GROUP_FK;
+        
+        DROP INDEX JPCS_SCRIPT_GROUP_IX;
+        DROP INDEX PPS_SCRIPT_GROUP_IX;
+        DROP INDEX ES_SCRIPT_GROUP_IX;
+        DROP INDEX WDS_SCRIPT_GROUP_IX;
+        DROP INDEX WPS_SCRIPT_GROUP_IX;
+        
+        ALTER TABLE JOB_PRE_CONDITION_SCRIPT DROP COLUMN SCRIPT_GROUP_ID;
+        ALTER TABLE POST_PROCESS_SCRIPT DROP COLUMN SCRIPT_GROUP_ID;
+        ALTER TABLE SCRIPT DROP COLUMN SCRIPT_GROUP_ID;
+        ALTER TABLE WORK_DIR_SCRIPT DROP COLUMN SCRIPT_GROUP_ID;
+        ALTER TABLE WORKFLOW_PRIORITY_SCRIPT DROP COLUMN SCRIPT_GROUP_ID;
+        ALTER TABLE STEP_PRE_CONDITION_SCRIPT DROP COLUMN SCRIPT_GROUP_ID;
+        
+        DELETE FROM sec_resource_role WHERE id='00000000-0000-0000-0000-000000000608';
+        
+        DROP TABLE SCRIPT_GROUP;
+      </sql>
+    </change>
+    <change number="15">
+      <description>Fix the sequences on steps that are not correct.</description>
+      <groovy file="4.2/ub_015_fix_job_step_sequences.groovy"/>
+    </change>
+    <change number="16">
+      <description>Update Agent Pool table to support Dyamic Agent Pools</description>
+      <sql separator=";">
+        ALTER TABLE AGENT_POOL ADD DYNAMIC NUMERIC DEFAULT 0 NOT NULL;
+        ALTER TABLE AGENT_POOL ADD DATA CLOB;
+        UPDATE AGENT_POOL SET DYNAMIC = 0;
+      </sql>
+    </change>
+    <change number="17">
+      <description>Add reporting display names.</description>
+      <changeref library="reporting" change="5"/>
+    </change>
+    <change number="18">
+      <description>Add display names to reporting tables and dimensions.</description>
+      <sql separator=";">
+        UPDATE REP_DIMENSION SET DISPLAY_NAME = 'Date Information' WHERE NAME = 'DATE_DIM';
+        UPDATE REP_DIMENSION SET DISPLAY_NAME = 'Time Information' WHERE NAME = 'TIME_DIM';
+        UPDATE REP_DIMENSION SET DISPLAY_NAME = 'Users' WHERE NAME = 'USER_DIM';
+        UPDATE REP_DIMENSION SET DISPLAY_NAME = 'Audited Objects' WHERE NAME = 'CONFIG_OBJECT_DIM';
+        UPDATE REP_FACT_TABLE SET DISPLAY_NAME = 'Audit Records' WHERE NAME = 'OBJECT_CONFIG_AUDITING';
+        UPDATE REP_DIMENSION SET DISPLAY_NAME = 'Project Templates' WHERE NAME = 'PROJECT_TEMPLATE_DIM';
+        UPDATE REP_DIMENSION SET DISPLAY_NAME = 'Process Templates' WHERE NAME = 'PROCESS_TEMPLATE_DIM';
+        UPDATE REP_DIMENSION SET DISPLAY_NAME = 'Projects' WHERE NAME = 'PROJECT_DIM';
+        UPDATE REP_DIMENSION SET DISPLAY_NAME = 'Project Processes' WHERE NAME = 'PROCESS_DIM';
+        UPDATE REP_DIMENSION SET DISPLAY_NAME = 'Build Lives' WHERE NAME = 'BUILD_LIFE_DIM';
+        UPDATE REP_DIMENSION SET DISPLAY_NAME = 'Tests' WHERE NAME = 'TEST_DIM';
+        UPDATE REP_DIMENSION SET DISPLAY_NAME = 'Test Reports' WHERE NAME = 'TEST_REPORT_DIM';
+        UPDATE REP_FACT_TABLE SET DISPLAY_NAME = 'Test Executions' WHERE NAME = 'TEST_INSTANCE';
+        UPDATE REP_FACT_TABLE SET DISPLAY_NAME = 'Process Executions' WHERE NAME = 'PROCESS_EXECUTION';
+        UPDATE REP_DIMENSION SET DISPLAY_NAME = 'Source Repositories' WHERE NAME = 'REPOSITORY_DIM';
+        UPDATE REP_DIMENSION SET DISPLAY_NAME = 'Source Configs' WHERE NAME = 'SOURCE_CONFIG_DIM';
+        UPDATE REP_DIMENSION SET DISPLAY_NAME = 'Source Repository Users' WHERE NAME = 'REPO_USER_DIM';
+        UPDATE REP_DIMENSION SET DISPLAY_NAME = 'Source Change Sets' WHERE NAME = 'CHANGE_SET_DIM';
+        UPDATE REP_FACT_TABLE SET DISPLAY_NAME = 'Source Change Properties' WHERE NAME = 'CHANGE_SET_PROPERTY';
+        UPDATE REP_FACT_TABLE SET DISPLAY_NAME = 'Source Changes' WHERE NAME = 'SOURCE_CHANGE';
+        UPDATE REP_FACT_TABLE SET DISPLAY_NAME = 'Source File Changes' WHERE NAME = 'FILE_CHANGE';
+        UPDATE REP_DIMENSION SET DISPLAY_NAME = 'Issue Trackers' WHERE NAME = 'ISSUE_TRACKER_DIM';
+        UPDATE REP_DIMENSION SET DISPLAY_NAME = 'Issues' WHERE NAME = 'ISSUE_DIM';
+        UPDATE REP_FACT_TABLE SET DISPLAY_NAME = 'Issues from Source Changes' WHERE NAME = 'CHANGE_SET_ISSUE_FACT';
+        UPDATE REP_DIMENSION SET DISPLAY_NAME = 'Source Analytics Reports' WHERE NAME = 'SOURCE_ANALYTIC_REPORT_DIM';
+        UPDATE REP_FACT_TABLE SET DISPLAY_NAME = 'Source Analytic Findings' WHERE NAME = 'SOURCE_ANALYTIC';
+        UPDATE REP_DIMENSION SET DISPLAY_NAME = 'Coverage Reports' WHERE NAME = 'CODE_COVERAGE_REPORT_DIM';
+        UPDATE REP_FACT_TABLE SET DISPLAY_NAME = 'Coverage Groups' WHERE NAME = 'CODE_COVERAGE_GROUP';
+        UPDATE REP_DIMENSION SET DISPLAY_NAME = 'Build Configurations' WHERE NAME = 'BUILD_CONFIG_DIM';
+        
+        UPDATE REP_FACT_TABLE_COLUMN SET DESCRIPTION = '''Create'', ''Edit'', or ''Delete'''
+        WHERE FACT_TABLE_ID = '00000000-0000-0000-0000-000000000005';
+      </sql>
+    </change>
+    <change number="19">
+      <description>Update resource type names.</description>
+      <sql separator=";">
+      UPDATE sec_resource_type SET name = 'Project Process' WHERE name = 'Workflow';
+      UPDATE sec_resource_type SET name = 'Workflow' WHERE name = 'Library Workflow';
+      DELETE FROM sec_role_action WHERE sec_action_id IN (SELECT id from sec_action WHERE sec_resource_type_id = '00000000-0000-0000-0000-000000000020');
+      DELETE FROM sec_resource_role_to_action WHERE sec_action_id IN (SELECT id from sec_action WHERE sec_resource_type_id = '00000000-0000-0000-0000-000000000020');
+      DELETE FROM sec_action WHERE sec_resource_type_id = '00000000-0000-0000-0000-000000000020';
+      DELETE FROM sec_resource_role WHERE id = '00000000-0000-0000-0000-000000000611';
+      DELETE FROM sec_resource_type WHERE id = '00000000-0000-0000-0000-000000000020';
+      </sql>
+    </change>
+    <change number="20">
+      <description>Update security action names.</description>
+      <sql separator=";">
+        UPDATE sec_action SET name='Process Run', description='Ability to run a build process or secondary process.'
+            WHERE id='00000000-0000-0000-0000-000000000035';
+        UPDATE sec_action SET name='Process Task Run', description='Ability to run a build process or secondary process only through the completion of a pre-created task.'
+            WHERE id='00000000-0000-0000-0000-000000000036';
+        UPDATE sec_action SET name='Process Restart', description='Ability to restart build processes and secondary processes that have already completed or those that are running in certain scenarios where there are parallel activities. You only need this action granted by a role. There is no resource that needs to be added to a user''s team. A user can restart any process they can run.'
+            WHERE id='00000000-0000-0000-0000-000000000067';
+        UPDATE sec_action SET name='Process Prioritize', description='Ability to change the priority of running build processes and secondary processes. You only need this action granted by a role. There is no resource that needs to be added to a user''s team. A user can prioritize any process they can run.'
+            WHERE id='00000000-0000-0000-0000-000000000068';
+        UPDATE sec_action SET name='Process Abort', description='Ability to abort running build processes and secondary processes. You only need this action granted by a role. There is no resource that needs to be added to a user''s team. A user can restart any process they can run.'
+            WHERE id='00000000-0000-0000-0000-000000000101';
+      </sql>
+    </change>
+    <change number="21">
+      <description>Add saved reports.</description>
+      <changeref library="reporting" change="6"/>
+    </change>
+    <change number="22">
+      <description>Add report security (Derby).</description>
+    </change>
+    <change number="23">
+      <description>Grant report security (Derby).</description>
+    </change>
+    <change number="24">
+      <description>Rename Codestation to CodeStation</description>
+      <sql separator=";">
+        UPDATE sec_action SET name='CodeStation View', description = 'Ability to view a CodeStation project. This is required to see the CodeStation project and configure it as a dependency.'
+            WHERE id='00000000-0000-0000-0000-000000000089';
+        UPDATE sec_action SET name='CodeStation Edit', description = 'Ability to edit and delete a CodeStation project, manage its build lives and their artifacts.'
+            WHERE id='00000000-0000-0000-0000-000000000090';
+        UPDATE sec_action SET name='CodeStation Create', description = 'Ability to create new CodeStation projects.'
+            WHERE id='00000000-0000-0000-0000-000000000092';
+        UPDATE sec_action SET name='CodeStation Download', description = 'Ability to download artifacts of a CodeStation project.'
+            WHERE id='00000000-0000-0000-0000-000000000097';
+
+        UPDATE sec_resource_type SET name='CodeStation' WHERE id='00000000-0000-0000-0000-000000000008';
+      </sql>
+    </change>
+    <change number="25">
+      <description>Remove unused resource roles</description>
+      <groovy file="4.2/ub_025_remove_unused_resource_roles.groovy"/>
+    </change>
+    <change number="26">
+      <description>Add report security (non-Derby).</description>
+      <changeref library="reporting" change="8"/>
+    </change>
+    <change number="27">
+      <description>Grant report security. (non-Derby).</description>
+      <groovy file="repair_permissions.groovy"/>
+    </change>
+    <change number="28">
+      <description>Change reporting column types for numerics.</description>
+      <sql separator=";">
+        ALTER TABLE PROCESS_EXECUTION ADD DURATION_NUMERIC NUMERIC;
+        UPDATE PROCESS_EXECUTION SET DURATION_NUMERIC = CAST(DURATION AS NUMERIC);
+        ALTER TABLE PROCESS_EXECUTION DROP COLUMN DURATION;
+        ALTER TABLE PROCESS_EXECUTION RENAME COLUMN DURATION_NUMERIC TO DURATION;
+        ALTER TABLE PROCESS_EXECUTION MODIFY DURATION NOT NULL;
+        
+        ALTER TABLE TEST_INSTANCE ADD DURATION_NUMERIC NUMERIC;
+        UPDATE TEST_INSTANCE SET DURATION_NUMERIC = CAST(DURATION AS NUMERIC);
+        ALTER TABLE TEST_INSTANCE DROP COLUMN DURATION;
+        ALTER TABLE TEST_INSTANCE RENAME COLUMN DURATION_NUMERIC TO DURATION;
+      </sql>
+    </change>
+    <change number="29">
+      <description>Add output configuration to saved reports.</description>
+      <changeref library="reporting" change="9"/>
+    </change>
+    <change number="30">
+      <description>Change reporting column types for numerics.</description>
+      <sql separator=";">
+        ALTER TABLE BUILD_LIFE_DIM ADD BUILD_LIFE_ID_NUMERIC NUMERIC;
+        UPDATE BUILD_LIFE_DIM SET BUILD_LIFE_ID_NUMERIC = CAST(BUILD_LIFE_ID AS NUMERIC);
+        ALTER TABLE BUILD_LIFE_DIM DROP COLUMN BUILD_LIFE_ID;
+        ALTER TABLE BUILD_LIFE_DIM RENAME COLUMN BUILD_LIFE_ID_NUMERIC TO BUILD_LIFE_ID;
+        ALTER TABLE BUILD_LIFE_DIM MODIFY BUILD_LIFE_ID NOT NULL;
+        
+        ALTER TABLE PROCESS_EXECUTION ADD PROCESS_ID_NUMERIC NUMERIC;
+        UPDATE PROCESS_EXECUTION SET PROCESS_ID_NUMERIC = CAST(PROCESS_ID AS NUMERIC);
+        ALTER TABLE PROCESS_EXECUTION DROP COLUMN PROCESS_ID;
+        ALTER TABLE PROCESS_EXECUTION RENAME COLUMN PROCESS_ID_NUMERIC TO PROCESS_ID;
+        ALTER TABLE PROCESS_EXECUTION MODIFY PROCESS_ID NOT NULL;
+      </sql>
+    </change>
+    <change number="31">
+      <description>Apply new encryption to user passwords.</description>
+      <changeref library="security" change="8"/>
+    </change>
+    <change number="32">
+      <description>Increase the size of report names</description>
+      <changeref library="reporting" change="10"/>
+    </change>
+</change-set>

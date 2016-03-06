@@ -1,0 +1,237 @@
+#radiator {
+    height: 100%;
+}
+
+html, body, #radiator > div, #radiator .container, #radiator .container-fluid, #radiator .panel {
+    height: 100%;
+}
+
+body {
+    background-image: url("/images/diag1-75-dark.gif");
+    background-repeat: repeat;
+}
+
+#radiator {
+    padding-top: 20px;
+}
+
+#radiator .container-fluid {
+    display: table;
+    padding: 15px;
+    margin: 0px;
+    width: 100%;
+}
+
+#radiator .row {
+    display: table-row;
+}
+
+#radiator [class*="col-"] {
+    display: table-cell;
+    margin-top: 10px;
+    padding-bottom: 10px;
+    padding-right: 10px;
+    padding-left: 10px;
+    vertical-align: top;
+}
+
+#radiator .panel {
+    margin-bottom: 0px;
+    position: relative;
+    z-index: 1;
+}
+
+#radiator .panel .panel-body {
+    height: 200px;
+    padding: 0px;
+}
+
+#radiator .panel.complete, #draggableButtons .sortOrderButton.complete {
+    background-color: darkgreen;
+}
+
+#radiator .panel.failed, #draggableButtons .sortOrderButton.failed {
+    background-color: darkred;
+}
+
+#radiator .panel.aborted, #draggableButtons .sortOrderButton.aborted {
+    background-color: grey;
+}
+
+#radiator .panel.waiting-on-agents {
+    background-color: dodgerblue;
+}
+
+#radiator .panel.failed.claimed, #draggableButtons .sortOrderButton.claimed {
+    background: repeating-linear-gradient(
+        -45deg,
+        #8B0000,
+        #8B0000 10px,
+        #9C1000 10px,
+        #9C1000 20px
+    );
+}
+
+#radiator .panel .radiator-build-progress {
+    position: absolute;
+    border-radius: 3px;
+    height: 100%;
+}
+
+#radiator .panel.complete .radiator-build-progress, #draggableButtons .sortOrderButton.running {
+    background-color: limegreen;
+}
+
+#radiator .panel.failed .radiator-build-progress {
+    background-color: red;
+}
+
+#radiator .panel.aborted .radiator-build-progress {
+    background-color: lightgrey;
+}
+
+#radiator .panel .radiator-build-info {
+    padding: 15px;
+    position: relative;
+}
+
+.radiator-build-times, .radiator-build-id>a {
+    color: rgba(255, 255, 255, 0.3);
+}
+
+.panel.running .radiator-build-times, .panel.running .radiator-build-id>a {
+    color: rgba(255, 255, 255, 0.5);
+}
+
+.radiator-build-times>.elapsed {
+    color: rgba(255, 255, 255, 0.7);
+}
+
+.radiator-build-times>.elapsed:after {
+    content: "|";
+}
+
+.radiator-build-title {
+    font-size: 1.75em;
+    margin: 0;
+    text-align: center;
+    color: white;
+}
+
+.radiator-build-body {
+    font-size: 1.25em;
+    color: white;
+}
+
+.radiator-build-times, .radiator-build-id, .time-since-build {
+    bottom: 1em;
+    font-weight: bold;
+    position: absolute;
+}
+
+.radiator-build-times-table {
+    display: table;
+}
+
+.radiator-build-times-cell {
+    display: table-cell;
+}
+
+.radiator-build-times {
+    right: 1.5em;
+}
+
+.radiator-build-id {
+    left: 1.5em;
+}
+
+.radiator-build-duration, .radiator-time-since-build {
+    text-align: right;
+    width: 150px;
+}
+
+.add-remove-header {
+    margin-left: 15px;
+}
+
+.clearfix:before, .container:before, .container-fluid:before, .row:before,
+.clearfix:after, .container:after, .container-fluid:after, .row:after {
+    display: none;
+}
+
+a, a:hover, a:visited {
+    color: white;
+    cursor: pointer;
+}
+
+.claim {
+    font-size: .7em;
+    float: right;
+    margin-top: 5px;
+}
+
+.settingBtn {
+    width: 35px;
+    height: 35px;
+    background: url("/images/settings-gear.gif");
+    position: absolute;
+    right: 5px;
+    top: 5px;
+
+}
+
+.settings-modal .modal-dialog {
+    position: absolute !important;
+    width: 500px;
+    overflow-y:auto;
+    max-height:90%;
+    margin:0px !important;
+    right: 5px !important;
+    top:5px !important;
+}
+
+.setting-item {
+    margin-top: 10px;
+    font-weight: normal;
+}
+
+.selector {
+    margin-left: 3px;
+    margin-right: 3px;
+}
+
+.center {
+    text-align: center;
+}
+
+.float-right {
+    float: right;
+}
+
+.display-none {
+    display: none;
+}
+
+#draggableButtons {
+    display: inline-block;
+}
+
+#draggableButtons div {
+    cursor: move;
+}
+
+.sortOrderButton {
+    width: 75px;
+    vertical-align: middle;
+    display: inline-block;
+    margin-right: 1px;
+    border: 1px solid transparent;
+    border-radius: 4px;
+    padding: 5px 0px;
+}
+
+.sortOrderButton p {
+    color: white;
+    text-align: center;
+    margin-bottom: 0px;
+}

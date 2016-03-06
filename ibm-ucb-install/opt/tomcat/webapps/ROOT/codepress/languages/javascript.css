@@ -1,0 +1,16 @@
+/*
+* Licensed Materials - Property of IBM Corp.
+* IBM UrbanCode Build
+* (c) Copyright IBM Corporation 2012, 2014. All Rights Reserved.
+*
+* U.S. Government Users Restricted Rights - Use, duplication or disclosure restricted by
+* GSA ADP Schedule Contract with IBM Corp.
+*/
+/*
+ * CodePress color styles for JavaScript syntax highlighting
+ */
+
+b {color:#7F0055;font-weight:bold;} /* reserved words */
+u {color:darkblue;font-weight:bold;} /* special words */
+i, i b, i s, i u {color:green;font-weight:normal;} /* comments */
+s, s b, s u {color:#2A00FF;font-weight:normal;} /* strings */

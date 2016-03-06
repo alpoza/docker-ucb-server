@@ -1,0 +1,728 @@
+<?xml version="1.0"?>
+<!--
+- Licensed Materials - Property of IBM Corp.
+- IBM UrbanCode Build
+- (c) Copyright IBM Corporation 2012, 2014. All Rights Reserved.
+-
+- U.S. Government Users Restricted Rights - Use, duplication or disclosure restricted by
+- GSA ADP Schedule Contract with IBM Corp.
+-->
+
+<change-set release="5.0">
+
+  <library name="plugin-server"
+      release="1.0"
+      base-dir="plugin-server"
+      file="plugin-server/mysql/upgrade_sql_1.0.xml"
+      version-table="pl_db_version"
+      release-column="release_name"
+      version-column="ver"/>
+  />
+  <library name="property-sheets"
+      release="1.0"
+      base-dir="property-sheets"
+      file="property-sheets/mysql/upgrade_sql_1.0.xml"
+      version-table="ps_db_version"
+      release-column="release_name"
+      version-column="ver"/>
+  />
+  <library name="reporting"
+      release="4.0"
+      base-dir="reporting"
+      file="reporting/mysql/upgrade_sql_4.0.xml"
+      version-table="REPORT_DB_VERSION"
+      release-column="RELEASE_NAME"
+      version-column="VER"/>
+  />
+  <library name="security"
+      release="1.0"
+      base-dir="security"
+      file="security/mysql/upgrade_1.0.xml"
+      version-table="sec_db_version"
+      release-column="release_name"
+      version-column="ver"/>
+  />
+  <library name="workflow"
+      release="1.0"
+      base-dir="workflow"
+      file="workflow/mysql/upgrade_sql_1.0.xml"
+      version-table="wf_db_version"
+      release-column="release_name"
+      version-column="ver"/>
+  />
+    
+  <change number="1">
+    <description>Replacing occurrences of workflow with process.</description>
+    <sql>
+      UPDATE TEMPLATE SET DATA = '<![CDATA[<?xml version="1.0" encoding="UTF-8"?>
+<template>
+<name>Simple Process Email Template</name>
+<template-text><![CDATA[## BEGIN SECTION Subject
+
+#set($project = $workflow.Project)
+#set($stamp = $workflow.BuildLife.latestStamp())
+
+Process: 
+#if($stamp != "")
+  $project.Name - $workflow.Name ($stamp):
+#else
+  $project.Name - $workflow.Name:
+#end
+
+#if($workflow.Status.equalsIgnoreCase("Complete"))
+  Success
+#else
+  $workflow.Status
+#end
+
+## END SECTION Subject
+
+## BEGIN SECTION Body
+## PROPERTY Content-Type: text/html
+## PROPERTY X-Priority: 3
+
+<!DOCTYPE html PUBLIC "-//W3C//DTD HTML 4.01 Transitional//EN">
+
+<html>
+
+<head>
+<title>Process</title>
+<STYLE TYPE="text/css">
+<!--
+table.data-table td {
+    vertical-align: top;
+}
+
+table.data-table
+{
+    font-family: arial, helvetica, sans-serif;
+    font-size: 12px;
+    background-color: #567596;
+}
+
+table.data-table caption
+{
+    padding-top: 10px;
+    padding-bottom: 10px;
+    text-align: left;
+}
+
+table.data-table th
+{
+    text-align: center;
+    background-color: #cfdbef;
+    height: 25px;
+}
+
+table.data-table td
+{
+    vertical-align: top;
+}
+
+table.data-table tr.odd
+{
+    background-color: #ffffff;
+}
+
+table.data-table tr.even
+{
+    background-color: #f6f6f6;
+}
+
+.data-table-button-bar
+{
+    padding-top: 10px;
+    padding-bottom: 10px;
+}
+
+.data-table-container
+{
+    padding-top: 10px;
+    padding-bottom: 10px;
+}
+-->
+</STYLE>
+</head>
+<body>
+
+<h1> Process: $workflow.Name
+</h1>
+
+
+<div class="data-table-container">
+<table class="data-table" cellpadding="4" cellspacing="1" width="100%">
+ <table-body>
+  <tr class="data-table-head">
+    <th scope="col" align="left" valign="middle"><strong>Job Name</strong></th>
+    <th scope="col" align="left" valign="middle"><strong>Agent Name</strong></th>
+    <th scope="col" align="left" valign="middle">Status</strong></th>
+  </tr>
+  #foreach($trace in $workflow.JobTraceList)
+    <tr bgcolor="#ffffff">
+      <td>$trace.getName()</td>
+      <td align="center">$trace.Agent</td>
+      #set($status = $trace.Status)
+      <td align="center">
+        #if($trace.statusIsSuccess())
+          <strong style="color: green">
+        #elseif($trace.statusIsFailure())
+          <strong style="color: red">
+        #else
+          <strong style="color: blue">
+        #end
+        $status</strong>
+      </td>
+    </tr>
+  #end
+ </table-body>
+</table>
+
+Additional information available on uBuild here:
+  <a href="$workflow.Url">
+  $workflow.Url</a>
+</div>
+
+</body>
+</html>
+
+## END SECTION Body]]]]><![CDATA[></template-text>
+<description>A simple example of a velocity template for creating notification emails for notification service.</description>
+</template>
+]]>' WHERE ID = -1 AND VERSION = 0;;
+    
+    
+    
+      UPDATE TEMPLATE SET DATA = '<![CDATA[<?xml version="1.0" encoding="UTF-8"?>
+<template>
+<name>Build Request Failed Template</name>
+<template-text><![CDATA[## BEGIN SECTION Subject
+
+#set($trace = $request.JobTrace)
+#set($project = $trace.Project)
+
+Request Failed: $project.Name - $request.Workflow.Name
+
+## END SECTION Subject
+
+## BEGIN SECTION Body
+## PROPERTY Content-Type: text/html
+## PROPERTY X-Priority: 3
+
+<!DOCTYPE html PUBLIC "-//W3C//DTD HTML 4.01 Transitional//EN">
+
+#set($trace = $request.JobTrace)
+#set($project = $trace.Project)
+
+<html>
+
+<head>
+<title>Process</title>
+</head>
+<body>
+
+Request Failed: $project.Name - $request.Workflow.Name
+<p>
+
+Additional information available on uBuild here:
+<a href="$request.Url">$request.Url</a>
+
+</body>
+</html>
+
+## END SECTION Body]]]]><![CDATA[></template-text>
+<description>A simple example template to notify users of a failed build request</description>
+</template>
+]]>' WHERE ID = -2 AND VERSION = 0;;
+
+
+
+      UPDATE TEMPLATE SET DATA = '<![CDATA[<?xml version="1.0" encoding="UTF-8" standalone="no"?><template><name>Simple IM Template</name>
+<template-text><![CDATA[## BEGIN SECTION Subject
+
+#set($project = $workflow.Project)
+#set($stamp = $workflow.BuildLife.latestStamp())
+
+Process: 
+#if($stamp != "")
+  $project.Name - $workflow.Name ($stamp):
+#else
+  $project.Name - $workflow.Name:
+#end
+
+#if($workflow.Status.equalsIgnoreCase("Complete"))
+  Success
+#else
+  $workflow.Status
+#end
+
+## END SECTION Subject
+
+## BEGIN SECTION Body
+
+#if ( !$workflow )
+#set($workflow = $request.WorkflowCase)
+#end
+#if($workflow.Status.equalsIgnoreCase("Complete"))
+  Success
+#else
+  $workflow.Status
+#end
+#set($project = $workflow.Project)
+#set($stamp = $workflow.BuildLife.latestStamp())
+$project.Name - $workflow.Name #if($stamp != "") ($stamp) #end
+$workflow.Url
+
+## END SECTION Body]]]]><![CDATA[></template-text>
+<description>A simple example of a velocity template for creating notification IMs for notification service.</description>
+</template>
+]]>' WHERE ID = -3 AND VERSION = 0;;
+
+
+
+      UPDATE TEMPLATE SET DATA = '<![CDATA[<?xml version="1.0" encoding="UTF-8"?>
+<template>
+<name>Process Email Template With Steps</name>
+<template-text><![CDATA[## BEGIN SECTION Subject
+
+#set($project = $workflow.Project)
+#set($stamp = $workflow.BuildLife.latestStamp())
+
+Process: 
+#if($stamp != "")
+  $project.Name - $workflow.Name ($stamp):
+#else
+  $project.Name - $workflow.Name:
+#end
+
+#if($workflow.Status.equalsIgnoreCase("Complete"))
+  Success
+#else
+  $workflow.Status
+#end
+
+## END SECTION Subject
+
+## BEGIN SECTION Body
+## PROPERTY Content-Type: text/html
+## PROPERTY X-Priority: 3
+
+<!DOCTYPE html PUBLIC "-//W3C//DTD HTML 4.01 Transitional//EN">
+
+<html>
+
+<head>
+<title>Process</title>
+<STYLE TYPE="text/css">
+<!--
+table.data-table td {
+    vertical-align: top;
+}
+
+table.data-table
+{
+    font-family: arial, helvetica, sans-serif;
+    font-size: 12px;
+    background-color: #567596;
+}
+
+table.data-table caption
+{
+    padding-top: 10px;
+    padding-bottom: 10px;
+    text-align: left;
+}
+
+table.data-table th
+{
+    text-align: center;
+    background-color: #cfdbef;
+    height: 25px;
+}
+
+table.data-table td
+{
+    vertical-align: top;
+}
+
+table.data-table tr.odd
+{
+    background-color: #ffffff;
+}
+
+table.data-table tr.even
+{
+    background-color: #f6f6f6;
+}
+
+.data-table-button-bar
+{
+    padding-top: 10px;
+    padding-bottom: 10px;
+}
+
+.data-table-container
+{
+    padding-top: 10px;
+    padding-bottom: 10px;
+}
+-->
+</STYLE>
+</head>
+<body>
+
+<h1> Process: $workflow.Name
+</h1>
+
+
+<div class="data-table-container">
+<table class="data-table" cellpadding="4" cellspacing="1" width="100%">
+ <table-body>
+  <tr class="data-table-head">
+    <th scope="col" align="left" valign="middle"><strong>Job Name</strong></th>
+    <th scope="col" align="left" valign="middle"><strong>Agent Name</strong></th>
+    <th scope="col" align="left" valign="middle">Status</strong></th>
+  </tr>
+  #foreach($trace in $workflow.JobTraceList)
+    <tr bgcolor="#ffffff">
+      <td>$trace.Name</td>
+      <td align="center">$trace.Agent</td>
+      #set($status = $trace.Status)
+      <td align="center">
+        #if($trace.statusIsSuccess())
+          <strong style="color: green">
+        #elseif($trace.statusIsFailure())
+          <strong style="color: red">
+        #else
+          <strong style="color: blue">
+        #end
+        $status</strong>
+      </td>
+    </tr>
+
+    #foreach($step in $trace.StepList)
+      <tr bgcolor="#ffffff">
+        <td>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;Step - $step.Name</td>
+        <td align="center">$trace.Agent</td>
+        #set($stepStatus = $step.Status)
+        <td align="center">
+          #if($step.statusIsSuccess())
+            <strong style="color: green">
+          #elseif($step.statusIsFailure())
+            <strong style="color: red">
+          #else
+            <strong style="color: blue">
+          #end
+          $stepStatus</strong>
+        </td>
+      </tr>
+    #end
+  #end
+ </table-body>
+</table>
+
+Additional information available on uBuild here:
+  <a href="$workflow.Url">
+  $workflow.Url</a>
+</div>
+
+</body>
+</html>
+
+## END SECTION Body]]]]><![CDATA[></template-text>
+<description>A simple example of a velocity template for creating notification emails for notification service. This template also includes a listing of steps for each job.</description>
+</template>
+]]>' WHERE ID = -4 AND VERSION = 0;;
+    </sql>
+  </change>
+
+  <change number="2">
+    <description>Reduce size of request fields to fit in MySQL indexes.</description>
+    <sql separator=";">
+    ALTER TABLE BUILD_REQUEST ADD COLUMN REQUESTER_CLASS_NEW VARCHAR(255) BINARY;
+    ALTER TABLE BUILD_REQUEST ADD COLUMN REQUESTER_TYPE_NEW VARCHAR(32) BINARY;
+    
+    UPDATE BUILD_REQUEST SET
+        REQUESTER_CLASS_NEW = SUBSTR(REQUESTER_CLASS, 1, 255),
+        REQUESTER_TYPE_NEW = SUBSTR(REQUESTER_TYPE, 1, 32);
+    
+    ALTER TABLE BUILD_REQUEST DROP INDEX BUILD_REQUEST_REQUESTER_CLASS;
+    ALTER TABLE BUILD_REQUEST DROP INDEX BUILD_REQUEST_REQUESTER_TYPE;
+    
+    ALTER TABLE BUILD_REQUEST DROP COLUMN REQUESTER_CLASS;
+    ALTER TABLE BUILD_REQUEST DROP COLUMN REQUESTER_TYPE;
+    
+    ALTER TABLE BUILD_REQUEST CHANGE REQUESTER_CLASS_NEW REQUESTER_CLASS VARCHAR(255) BINARY;
+    ALTER TABLE BUILD_REQUEST CHANGE REQUESTER_TYPE_NEW REQUESTER_TYPE VARCHAR(32) BINARY;
+    
+    CREATE INDEX BUILD_REQUEST_REQUESTER_TYPE
+        ON BUILD_REQUEST(REQUESTER_TYPE ASC);
+    CREATE INDEX BUILD_REQUEST_REQUESTER_CLASS
+        ON BUILD_REQUEST(REQUESTER_CLASS ASC);
+    </sql>
+  </change>
+
+  <change number="3">
+    <description>Reduce size of request fields to fit in MySQL indexes.</description>
+    <sql separator=";">
+    ALTER TABLE BUILD_REQUEST ADD COLUMN STATUS_NEW VARCHAR(32) BINARY;
+    
+    UPDATE BUILD_REQUEST SET
+        STATUS_NEW = SUBSTR(STATUS, 1, 32);
+    
+    ALTER TABLE BUILD_REQUEST DROP INDEX BR_STATUS;
+    
+    ALTER TABLE BUILD_REQUEST DROP COLUMN STATUS;
+    
+    ALTER TABLE BUILD_REQUEST CHANGE STATUS_NEW STATUS VARCHAR(32) BINARY;
+    
+    CREATE INDEX BR_STATUS
+        ON BUILD_REQUEST(STATUS);
+    </sql>
+  </change>
+
+  <change number="4">
+    <description>Reduce size of request fields to fit in MySQL indexes.</description>
+    <sql separator=";">
+    ALTER TABLE BUILD_WORKFLOW_SUMMARY ADD COLUMN REQUESTER_CLASS_NEW VARCHAR(255) BINARY;
+    ALTER TABLE BUILD_WORKFLOW_SUMMARY ADD COLUMN REQUESTER_TYPE_NEW VARCHAR(32) BINARY;
+    
+    UPDATE BUILD_WORKFLOW_SUMMARY SET
+        REQUESTER_CLASS_NEW = SUBSTR(REQUESTER_CLASS, 1, 255),
+        REQUESTER_TYPE_NEW = SUBSTR(REQUESTER_TYPE, 1, 32);
+    
+    ALTER TABLE BUILD_WORKFLOW_SUMMARY DROP COLUMN REQUESTER_CLASS;
+    ALTER TABLE BUILD_WORKFLOW_SUMMARY DROP COLUMN REQUESTER_TYPE;
+    
+    ALTER TABLE BUILD_WORKFLOW_SUMMARY CHANGE REQUESTER_CLASS_NEW REQUESTER_CLASS VARCHAR(255) BINARY;
+    ALTER TABLE BUILD_WORKFLOW_SUMMARY CHANGE REQUESTER_TYPE_NEW REQUESTER_TYPE VARCHAR(32) BINARY;
+    </sql>
+  </change>
+
+  <change number="5">
+    <description>Reduce size of property value fields to fit in MySQL indexes.</description>
+    <sql separator=";"><![CDATA[
+    ALTER TABLE CODESTATION_BUILD_LIFE_PROP ADD COLUMN VALUE_NEW VARCHAR(255) BINARY;
+    UPDATE CODESTATION_BUILD_LIFE_PROP SET VALUE_NEW = SUBSTR(VALUE, 1, 255) WHERE VALUE IS NOT NULL AND LENGTH(VALUE) <= 255;
+    UPDATE CODESTATION_BUILD_LIFE_PROP SET LONG_VALUE = VALUE WHERE VALUE IS NOT NULL AND LENGTH(VALUE) > 255;
+    ALTER TABLE CODESTATION_BUILD_LIFE_PROP DROP INDEX CBLP_VALUE;
+    ALTER TABLE CODESTATION_BUILD_LIFE_PROP DROP COLUMN VALUE;
+    ALTER TABLE CODESTATION_BUILD_LIFE_PROP CHANGE VALUE_NEW VALUE VARCHAR(32) BINARY;
+    CREATE INDEX CBLP_VALUE ON CODESTATION_BUILD_LIFE_PROP(VALUE ASC);
+
+    ALTER TABLE CODESTATION_PROJECT_PROPERTY ADD COLUMN VALUE_NEW VARCHAR(255) BINARY;
+    UPDATE CODESTATION_PROJECT_PROPERTY SET VALUE_NEW = SUBSTR(VALUE, 1, 255) WHERE VALUE IS NOT NULL AND LENGTH(VALUE) <= 255;
+    UPDATE CODESTATION_PROJECT_PROPERTY SET LONG_VALUE = VALUE WHERE VALUE IS NOT NULL AND LENGTH(VALUE) > 255;
+    ALTER TABLE CODESTATION_PROJECT_PROPERTY DROP INDEX CPP_VALUE;
+    ALTER TABLE CODESTATION_PROJECT_PROPERTY DROP COLUMN VALUE;
+    ALTER TABLE CODESTATION_PROJECT_PROPERTY CHANGE VALUE_NEW VALUE VARCHAR(32) BINARY;
+    CREATE INDEX CPP_VALUE ON CODESTATION_PROJECT_PROPERTY(VALUE ASC);
+
+    ALTER TABLE PROJECT_PROPERTY ADD COLUMN VALUE_NEW VARCHAR(255) BINARY;
+    UPDATE PROJECT_PROPERTY SET VALUE_NEW = SUBSTR(VALUE, 1, 255) WHERE VALUE IS NOT NULL AND LENGTH(VALUE) <= 255;
+    UPDATE PROJECT_PROPERTY SET LONG_VALUE = VALUE WHERE VALUE IS NOT NULL AND LENGTH(VALUE) > 255;
+    ALTER TABLE PROJECT_PROPERTY DROP INDEX PROJECT_PROPERTY_VALUE;
+    ALTER TABLE PROJECT_PROPERTY DROP COLUMN VALUE;
+    ALTER TABLE PROJECT_PROPERTY CHANGE VALUE_NEW VALUE VARCHAR(32) BINARY;
+    CREATE INDEX PROJECT_PROPERTY_VALUE ON PROJECT_PROPERTY(VALUE ASC);
+    ]]></sql>
+  </change>
+
+  <change number="6">
+    <description>Remove unused task tables.</description>
+    <sql separator=";">
+    DROP TABLE USER_TASK;
+    </sql>
+  </change>
+  
+    <change number="7">
+        <description>Removing association from resource roles to actions</description>
+        <changeref library="security" change="9"/>
+    </change>
+  
+    <change number="8">
+        <description>Adding login attempt tracking</description>
+        <changeref library="security" change="10"/>
+    </change>
+  
+    <change number="9">
+       <description>Change boolean data types to all be varchar 1</description>
+      <changeref library="security" change="11"/>
+    </change>
+  
+    <change number="10">
+        <description>Adding generic user properties</description>
+        <changeref library="security" change="12"/>
+    </change>
+  
+    <change number="11">
+        <description>removing uniqueness constraints and adding unique indexes</description>
+        <changeref library="security" change="13"/>
+    </change>
+    
+    <change number="13">
+        <description>removing uniqueness constraints and adding unique indexes2</description>
+        <changeref library="security" change="14"/>
+    </change>
+  
+    <change number="14">
+        <description>Adding License Type Table</description>
+        <changeref library="security" change="15"/>
+    </change>
+  
+    <change number="15">
+        <description>removing the "not null" constraint from sec_user_property</description>
+        <changeref library="security" change="16"/>
+    </change>
+    
+    <change number="16">
+        <description>Adding a LicensedSessionCount that helps to keep track of existing session for a User using the same license</description>
+        <changeref library="security" change="17"/>
+    </change>
+
+    <change number="17">
+        <description>Adding a column to workflow_definition_job_config in order to store agent properties</description>
+        <sql separator=";">
+            ALTER TABLE WORKFLOW_DEFINITION_JOB_CONFIG ADD COLUMN AGENT_PROP VARCHAR(255) BINARY;
+        </sql>
+    </change>
+
+    <change number="18">
+        <description>Removing unused distributed servers</description>
+        <sql separator=";">
+            ALTER TABLE AGENT DROP FOREIGN KEY A_DISTRIBUTED_SERVER_FK;
+            ALTER TABLE AGENT DROP INDEX A_DISTRIBUTED_SERVER_IX;
+            ALTER TABLE AGENT DROP COLUMN PREFERRED_SERVER_ID;
+            DELETE FROM HI_LO_SEQ WHERE SEQ_NAME = 'DISTRIBUTED_SERVER';
+            DROP TABLE DISTRIBUTED_SERVER;
+        
+            DELETE FROM sec_resource_for_team WHERE sec_resource_id IN (
+                SELECT id from sec_resource WHERE sec_resource_type_id = '00000000-0000-0000-0000-000000000017'
+            );
+            DELETE FROM sec_resource WHERE sec_resource_type_id = '00000000-0000-0000-0000-000000000017';
+            DELETE FROM sec_resource_role WHERE sec_resource_type_id = '00000000-0000-0000-0000-000000000017';
+            DELETE FROM sec_role_action WHERE sec_action_id IN (SELECT id FROM sec_action WHERE sec_resource_type_id = '00000000-0000-0000-0000-000000000017');
+            DELETE FROM sec_action WHERE sec_resource_type_id = '00000000-0000-0000-0000-000000000017';
+            DELETE FROM sec_resource_type WHERE id = '00000000-0000-0000-0000-000000000017';
+        </sql>
+    </change>
+
+    <change number="19">
+        <description>Add description for CodeStation build lives</description>
+        <sql separator=";">
+            ALTER TABLE CODESTATION_BUILD_LIFE ADD COLUMN DESCRIPTION VARCHAR(255) BINARY;
+        </sql>
+    </change>
+
+    <change number="20">
+        <description>Reducing security 256 length char fields to 255.</description>
+        <changeref library="security" change="18"/>
+    </change>
+
+    <change number="21">
+        <description>Allow parallel steps.</description>
+        <sql separator=";">
+            ALTER TABLE JOB_CONFIG_STEP ADD COLUMN RUN_IN_PARALLEL NUMERIC DEFAULT 0 NOT NULL;
+            UPDATE JOB_CONFIG_STEP SET RUN_IN_PARALLEL = 0;
+        </sql>
+    </change>
+
+    <change number="22">
+        <description>Make steps independents.</description>
+        <sql separator=";">
+          CREATE TABLE JOB_STEP_TRACE_TEMP (
+              ID              BIGINT NOT NULL PRIMARY KEY,
+              VER             BIGINT DEFAULT 0 NOT NULL,
+              JOB_TRACE_ID    BIGINT NOT NULL,
+              STEP_SEQ        INTEGER,
+              NAME            VARCHAR(255) BINARY,
+              START_DATE      TIMESTAMP NULL DEFAULT NULL,
+              END_DATE        TIMESTAMP NULL DEFAULT NULL,
+              STATUS          VARCHAR(20) BINARY,
+              IGNORE_FAILURES NUMERIC DEFAULT 0 NOT NULL
+          ) ENGINE = INNODB;
+          CREATE TABLE JOB_STEP_TRACE_PROP_TEMP (
+              STEP_ID            BIGINT NOT NULL,
+              NAME               VARCHAR(255) BINARY NOT NULL,
+              VALUE              LONGTEXT,
+              SECURE             NUMERIC DEFAULT 0,
+              PRIMARY KEY (STEP_ID, NAME)
+          ) ENGINE = INNODB;
+          ALTER TABLE JOB_STEP_TRACE_PROP DROP FOREIGN KEY JSTP_STEP_TRACE_FK;
+        </sql>
+        <groovy file="5.0/ucb_022_independent_steps.groovy"/>
+        <sql separator=";">
+          DROP TABLE JOB_STEP_TRACE;
+          DROP TABLE JOB_STEP_TRACE_PROP;
+          RENAME TABLE JOB_STEP_TRACE_TEMP TO JOB_STEP_TRACE;
+          RENAME TABLE JOB_STEP_TRACE_PROP_TEMP TO JOB_STEP_TRACE_PROP;
+          CREATE INDEX JOB_STEP_TRACE_IX
+              ON JOB_STEP_TRACE(JOB_TRACE_ID);
+          CREATE INDEX JSTP_STEP_TRACE_IX
+              ON JOB_STEP_TRACE_PROP(STEP_ID);
+          ALTER TABLE JOB_STEP_TRACE_PROP ADD CONSTRAINT JSTP_STEP_TRACE_FK
+              FOREIGN KEY (STEP_ID) REFERENCES JOB_STEP_TRACE (ID)
+              ON DELETE CASCADE
+          ;
+          ALTER TABLE JOB_STEP_TRACE ADD CONSTRAINT JST_JOB_TRACE_FK
+              FOREIGN KEY (JOB_TRACE_ID)
+              REFERENCES JOB_TRACE (ID)
+              ON DELETE CASCADE
+          ;
+        </sql>
+    </change>
+    
+    <change number="23">
+        <description>Adding a new table to track tags on projects</description>
+        <sql separator=";">
+            CREATE TABLE PROJECT_TAG (
+                PROJECT_ID             BIGINT NOT NULL,
+                TAG                    VARCHAR(255) BINARY NOT NULL,
+                PRIMARY KEY (PROJECT_ID, TAG)
+            ) ENGINE = INNODB;
+            
+            ALTER TABLE PROJECT_TAG ADD CONSTRAINT PT_PROJECT_FK
+                FOREIGN KEY (PROJECT_ID)
+                REFERENCES PROJECT (ID)
+                ON DELETE CASCADE
+            ;
+        </sql>
+    </change>
+    <change number="24">
+      <description>Add a method data payload to dispatched tasks.</description>
+      <changeref library="workflow" change="15"/>
+    </change>
+    <change number="25">
+      <description>Add a category field for security actions.</description>
+      <changeref library="security" change="19"/>
+    </change>
+    <change number="26">
+      <description>Remove uniqueness from sec_action name index.</description>
+      <changeref library="security" change="20"/>
+    </change>
+    <change number="27">
+      <description>Add missing indexes for foreign keys.</description>
+      <changeref library="security" change="21"/>
+    </change>
+    <change number="28">
+      <description>Remove lingering passwordConfirm properties</description>
+      <sql separator=";">
+        DELETE FROM ps_prop_value WHERE name='passwordConfirm';
+      </sql>
+    </change>
+    <change number="29">
+      <description>Update server.xml to remove support for SSLv3</description>
+      <groovy file="5.0/ucb_029_server_xml_update.groovy"/>
+    </change>
+    <change number="30">
+      <description>Rebuild references files and clean up orphaned files</description>
+      <groovy file="5.0/ucb_030_rebuild_reference_files.groovy"/>
+    </change>
+    <change number="31">
+      <description>Rename duplicate statuses</description>
+      <groovy file="5.0/ucb_031_rename_duplicate_statuses.groovy"/>
+      <sql separator=";">
+        ALTER TABLE STATUS MODIFY COLUMN NAME VARCHAR(255) NOT NULL;
+      </sql>
+    </change>
+  
+</change-set>

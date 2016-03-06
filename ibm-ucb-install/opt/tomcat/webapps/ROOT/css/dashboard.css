@@ -1,0 +1,43 @@
+/*
+* Licensed Materials - Property of IBM Corp.
+* IBM UrbanCode Build
+* (c) Copyright IBM Corporation 2012, 2014. All Rights Reserved.
+*
+* U.S. Government Users Restricted Rights - Use, duplication or disclosure restricted by
+* GSA ADP Schedule Contract with IBM Corp.
+*/
+.dashboard {
+    position: relative;
+    width: 100%;
+}
+.dashboard-column {
+    float: left;
+    height: 100%;
+    margin: 1%;
+    padding: 1%;
+    position: relative;
+    width: 46%;
+}
+.dashboard-widget-header {
+    background-image: url("/images/dashboard_header_background.png");
+    background-repeat: repeat-x;
+    height: 35px;
+}
+.dashboard-widget-header-content {
+    border: 1px solid #BCBEC0;
+    color: black;
+    font-family: Arial, Helvetica, sans-serif;
+    font-size: 14px;
+    font-weight: bold;
+    height: 30px;
+    overflow: hidden;
+    padding-left: 15px;
+    padding-top: 7px;
+}
+.dashboard-widget {
+    background-color: white;
+    border: none; 
+    height: 400px;
+    margin-bottom: 20px;
+    width: 100%;
+}
