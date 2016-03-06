@@ -4,7 +4,7 @@ set -e
 
 if [ "$1" = 'ucb' ]; then
 
-exec /opt/ibm-ucd/server/bin/server run
+exec /opt/IBM/UCBuild/server/bin/server run
 
 elif [ "$1" = 'sleep' ]; then
 
