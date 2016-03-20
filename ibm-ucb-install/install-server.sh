@@ -39,6 +39,7 @@ export ANT_OPTS
 
 # run the install
 chmod +x "opt/apache-ant-${OUR_ANT_VERSION}/bin/ant"
+sync
 opt/apache-ant-${OUR_ANT_VERSION}/bin/ant -nouserlib -noclasspath -f install.with.groovy.xml install
 
 # restore previous state
