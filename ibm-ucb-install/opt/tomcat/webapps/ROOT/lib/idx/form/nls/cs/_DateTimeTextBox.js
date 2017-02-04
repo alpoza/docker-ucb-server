@@ -1,2 +1,0 @@
-//>>built
-define("idx/form/nls/cs/_DateTimeTextBox",{idxTimeIconTitle:"Klepnut\u00edm otev\u0159ete n\u00e1stroj pro v\u00fdb\u011br \u010dasu.",idxDateIconTitle:"Klepnut\u00edm otev\u0159ete n\u00e1stroj pro v\u00fdb\u011br data."});

@@ -1,2 +1,0 @@
-//>>built
-define("idx/bus/_BusMixin",["dojo/_base/declare"],function(a){return a("idx.bus._BusMixin",[],{constructor:function(){},postCreate:function(){this._busTopic="idx.widget."+this.get("id")},_idx_getBusTopic:function(){return this._busTopic}})});

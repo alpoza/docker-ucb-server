@@ -1,2 +1,0 @@
-//>>built
-define("idx/app/nls/fi/_Launcher",{tooManyOpenWorkspaces:'Lajin "${workspaceTypeName}"\u200e ty\u00f6tiloja voi avata enint\u00e4\u00e4n ${maxOpen}.  Sulje kaikki avoimet lajin "${workspaceTypeName}"\u200e ty\u00f6tilat, jos se on mahdollista.'});

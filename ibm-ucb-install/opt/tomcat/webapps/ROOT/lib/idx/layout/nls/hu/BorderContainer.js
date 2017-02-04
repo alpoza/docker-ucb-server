@@ -1,2 +1,0 @@
-//>>built
-define("idx/layout/nls/hu/BorderContainer",{toggleTitleExpand:"Szakasz kibont\u00e1sa",toggleTitleCollapse:"Szakasz \u00f6sszeh\u00faz\u00e1sa",toggleTitleRestore:"Szakasz vissza\u00e1ll\u00edt\u00e1sa"});

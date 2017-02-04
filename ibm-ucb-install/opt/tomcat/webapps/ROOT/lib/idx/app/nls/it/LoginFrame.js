@@ -1,2 +1,0 @@
-//>>built
-define("idx/app/nls/it/LoginFrame",{loginTitle:"Accesso",labelUserName:"Nome utente",labelPassword:"Password",invalidMessageTitle:"Tentativo di accesso non valido",invalidMessage:"Nei campi obbligatori \u00e8 stato immesso un valore non valido."});

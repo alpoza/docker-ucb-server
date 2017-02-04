@@ -1,2 +1,0 @@
-//>>built
-define("idx/gridx/modules/pagination/PaginationBarDD",["dojo/_base/declare","gridx/core/_Module","gridx/modules/pagination/PaginationBarDD","dijit/form/FilteringSelect","idx/form/Select"],function(a,b,c,d,e){return b.register(a(c,{stepperClass:d,sizeSwitchClass:e}))});

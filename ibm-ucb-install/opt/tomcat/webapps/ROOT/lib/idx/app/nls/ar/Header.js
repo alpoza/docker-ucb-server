@@ -1,2 +1,0 @@
-//>>built
-define("idx/app/nls/ar/Header",{ibmlogo:"IBM&reg;",actionShare:"\u0645\u0634\u0627\u0631\u0643\u0629",actionHelp:"\u0645\u0633\u0627\u0639\u062f\u0629",searchEntry:"\u0628\u062d\u062b",searchSubmit:"\u0628\u062d\u062b"});

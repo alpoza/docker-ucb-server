@@ -1,9 +1,0 @@
-Location =
-Product = IBM UrbanCode Build
-Version =
-Size =
-LogLevel =
-TraceLevel =
-MaxFiles =
-EnableLogging = 0
-EnableTracing = 0

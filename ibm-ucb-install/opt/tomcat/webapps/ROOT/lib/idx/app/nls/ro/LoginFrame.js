@@ -1,2 +1,0 @@
-//>>built
-define("idx/app/nls/ro/LoginFrame",{loginTitle:"Logare",labelUserName:"Nume utilizator",labelPassword:"Parola",invalidMessageTitle:"\u00cencercare de logare invalid\u0103",invalidMessage:"O valoare introdus\u0103 \u00een cele dou\u0103 c\u00e2mpuri necesare nu este valid\u0103."});

@@ -1,2 +1,0 @@
-//>>built
-define("idx/nls/ro/dialogs",{information:"Informa\u0163ii",warning:"Avertisment",error:"Eroare",confirmation:"Confirmare",progress:"Progres",loading:"\u00cenc\u0103rcare",close:"\u00cenchidere"});

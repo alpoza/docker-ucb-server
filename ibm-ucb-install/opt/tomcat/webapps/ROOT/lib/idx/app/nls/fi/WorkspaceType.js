@@ -1,2 +1,0 @@
-//>>built
-define("idx/app/nls/fi/WorkspaceType",{loadingMessage:"Ty\u00f6tilan ${workspaceTitle} lataus on meneill\u00e4\u00e4n.  Odota...",failedLoadMessage:"Ty\u00f6tilan ${workspaceTitle} lataus ei onnistunut."});

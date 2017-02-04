@@ -1,2 +1,0 @@
-//>>built
-define("idx/layout/nls/tr/BorderContainer",{toggleTitleExpand:"K\u0131sm\u0131 Geni\u015flet",toggleTitleCollapse:"K\u0131sm\u0131 Daralt",toggleTitleRestore:"K\u0131sm\u0131 Geri Y\u00fckle"});

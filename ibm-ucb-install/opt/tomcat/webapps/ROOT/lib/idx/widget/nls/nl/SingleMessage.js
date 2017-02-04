@@ -1,2 +1,0 @@
-//>>built
-define("idx/widget/nls/nl/SingleMessage",{viewAll:"Alles bekijken ({num})",viewDetails:"Meer details",refresh:"Vernieuwen",showDetails:"Informatie afbeelden",hideDetails:"Informatie verbergen"});

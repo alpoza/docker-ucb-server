@@ -1,2 +1,0 @@
-//>>built
-define("idx/gridx/nls/pl/Sort",{helpMsg:"${0} - Kliknij, aby posortowa\u0107, albo kliknij, przytrzymuj\u0105c klawisz Ctrl, aby doda\u0107 do sortowania",singleHelpMsg:"${0} - Kliknij, aby posortowa\u0107",priorityOrder:"priorytet sortowania: ${0}"});

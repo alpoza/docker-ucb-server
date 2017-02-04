@@ -1,2 +1,0 @@
-//>>built
-define("idx/layout/nls/pt-pt/BorderContainer",{toggleTitleExpand:"Expandir sec\u00e7\u00e3o",toggleTitleCollapse:"Contrair sec\u00e7\u00e3o",toggleTitleRestore:"Restaurar sec\u00e7\u00e3o"});

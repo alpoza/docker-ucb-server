@@ -1,2 +1,0 @@
-//>>built
-define("idx/nls/pl/dialogs",{information:"Informacja",warning:"Ostrze\u017cenie",error:"B\u0142\u0105d",confirmation:"Potwierdzenie",progress:"Post\u0119p",loading:"\u0141adowanie",close:"Zamknij"});

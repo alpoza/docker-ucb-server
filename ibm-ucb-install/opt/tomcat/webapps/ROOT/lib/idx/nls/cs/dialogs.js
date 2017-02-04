@@ -1,2 +1,0 @@
-//>>built
-define("idx/nls/cs/dialogs",{information:"Informace",warning:"Varov\u00e1n\u00ed",error:"Chyba",confirmation:"Potvrzen\u00ed",progress:"Postup",loading:"Na\u010d\u00edt\u00e1n\u00ed",close:"Zav\u0159\u00edt"});

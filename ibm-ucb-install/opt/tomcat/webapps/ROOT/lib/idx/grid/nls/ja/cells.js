@@ -1,2 +1,0 @@
-//>>built
-define("idx/grid/nls/ja/cells",{rowCheckBoxLabel:"\u3053\u306e\u884c\u306e\u9078\u629e\u3092\u5207\u308a\u66ff\u3048\u308b",headerCheckBoxLabel:"\u3059\u3079\u3066\u306e\u884c\u306e\u9078\u629e\u3092\u5207\u308a\u66ff\u3048\u308b"});

@@ -1,2 +1,0 @@
-//>>built
-define("idx/app/nls/nb/LoginFrame",{loginTitle:"Logg p\u00e5",labelUserName:"Brukernavn",labelPassword:"Passord",invalidMessageTitle:"Ugyldig p\u00e5loggingsfors\u00f8k",invalidMessage:"Det er ikke oppgitt en gyldig verdi i begge obligatoriske felt."});

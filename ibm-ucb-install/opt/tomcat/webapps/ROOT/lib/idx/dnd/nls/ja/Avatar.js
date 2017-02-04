@@ -1,2 +1,0 @@
-//>>built
-define("idx/dnd/nls/ja/Avatar",{copyText:"${num} \u9805\u76ee\u30b3\u30d4\u30fc",moveText:"${num} \u9805\u76ee\u79fb\u52d5",copyOneText:"1 \u9805\u76ee\u30b3\u30d4\u30fc",moveOneText:"1 \u9805\u76ee\u79fb\u52d5"});
