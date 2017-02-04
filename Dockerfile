@@ -1,20 +1,19 @@
-FROM centos
+FROM openjdk:8u111-jre
 MAINTAINER Murad Korejo <mkorejo@us.ibm.com>
 
-COPY ibm-ucb-install /tmp/install-media/ibm-ucb-install
-COPY ibm-java* /tmp/install-media/
+ARG ARTIFACT_DOWNLOAD_URL
+ENV HTTPS_PORT=8443 JMS_PORT=7919 MYSQL_PORT=3306 DB_NAME="ibm-ucb" \
+  DB_USER="ibm_ucb" DB_PASSWORD="password"
 
-RUN yum -y localinstall /tmp/install-media/ibm-java-x86_64-jre-7.1-3.10.x86_64.rpm ;\
-chmod a+x /tmp/install-media/ibm-ucb-install/install-server.sh
+COPY install.properties /tmp
+COPY entrypoint.sh /ucb_entrypoint.sh
 
-ENV JAVA_HOME /opt/ibm/java-x86_64-71/jre
-RUN /tmp/install-media/ibm-ucb-install/install-server.sh
+RUN cd /tmp && curl -Lk $ARTIFACT_DOWNLOAD_URL > ucb-server.zip \
+  && curl -Lk https://goo.gl/xScbnv > mysql_jdbc.jar \
+  && unzip /tmp/ucb-server.zip \
+  && mv /tmp/install.properties /tmp/ibm-ucb-install/install.properties \
+  && mv /tmp/mysql_jdbc.jar /tmp/ibm-ucb-install/lib/ext \
+  && chmod +x /tmp/ibm-ucb-install/install-server.sh \
+  && chmod +x /ucb_entrypoint.sh
 
-ADD docker-entrypoint.sh /docker-entrypoint.sh
-ENTRYPOINT ["/docker-entrypoint.sh"]
-
-RUN rm -rf /tmp/install-media
-
-EXPOSE 443 7919
-
-CMD ["ucb"]
+ENTRYPOINT ["/ucb_entrypoint.sh", "ucb"]
