@@ -18,9 +18,11 @@ docker run -d -e MYSQL_ROOT_PASSWORD=password -e MYSQL_DATABASE=ibm_ucb -e MYSQL
 ```
 
 ####Run the image
-Once MySQL is up:
+The environment variables `HTTPS_PORT` and `JMS_PORT` are available for customization however these default to 8443 and 7919 respectively. `BUILD_SERVER_HOSTNAME` and `DB_HOST` are required when running the image.
+
+Using the Compose file, simply `docker-compose up`.
+
+Otherwise, once MySQL is up:
 ```
 docker run -d -e BUILD_SERVER_HOSTNAME=<server-hostname-or-ip> -e DB_HOST=<db-hostname-or-ip> -p 8443:8443 -p 7919:7919 mkorejo/ucb-server
 ```
-
-Or simply `docker-compose up`.
