@@ -1,0 +1,21 @@
+version: '2'
+services:
+  ucb-db:
+    image: mysql:5.6
+    environment:
+      - MYSQL_ROOT_PASSWORD=password
+      - MYSQL_DATABASE=ibm_ucb
+      - MYSQL_USER=ibm_ucb
+      - MYSQL_PASSWORD=password
+    ports:
+      - 3306:3306
+  ucb-server:
+    image: mkorejo/ucb-server
+    environment:
+      - BUILD_SERVER_HOSTNAME="104.198.206.107"
+      - DB_HOST=ucb-db
+    ports:
+      - 8443:8443
+      - 7919:7919
+    depends_on:
+      - ucb-db
