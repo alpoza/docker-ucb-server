@@ -12,7 +12,7 @@ services:
   ucb-server:
     image: mkorejo/ucb-server
     environment:
-      - BUILD_SERVER_HOSTNAME=<server-hostname-or-IP>
+      - BUILD_SERVER_HOSTNAME=<server-hostname-or-ip>
       - DB_HOST=ucb-db
     ports:
       - 8443:8443
