@@ -3,10 +3,10 @@
 An easy way to evaluate UrbanCode Build. This repo contains instructions and the Dockerfile for [mkorejo/ucb-server](https://hub.docker.com/r/mkorejo/ucb-server/).
 
 ####Build the image
-To build the image you must specify `ARTIFACT_DOWNLOAD_URL` as a build argument and the value must be a direct link to the UrbanCode Build installation software. `docker build` downloads and extracts the UrbanCode Build installation software to create the image. UrbanCode Build is installed when the container is launched and can connect to the MySQL DB.
+To build the image you must specify `ARTIFACT_DOWNLOAD_URL` as a build argument and the value must be a direct link to the UrbanCode Build installation software. `docker build` downloads and extracts the UrbanCode Build installation software to create the image. UrbanCode Build is installed when the container is launched and is able to connect to the MySQL DB.
 ```
 git clone https://github.com/mkorejo/docker-ucb-server.git
-docker build --build-arg ARTIFACT_DOWNLOAD_URL=<direct-download-link> -t mkorejo/ucb-server .
+docker build --build-arg ARTIFACT_DOWNLOAD_URL=<direct-download-link> -t <namespace>/ucb-server .
 ```
 
 ####Database requirements
