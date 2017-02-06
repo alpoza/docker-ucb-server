@@ -10,7 +10,7 @@ docker build --build-arg ARTIFACT_DOWNLOAD_URL=<direct-download-link> -t <namesp
 ```
 
 ####Database requirements
-During installation of UrbanCode Build, the image looks for a MySQL DB named *ibm_ucb* on port 3306 by default. The environment variables `DB_HOST`, `MYSQL_PORT`, `DB_NAME`, `DB_USER`, and `DB_PASSWORD` are available when running the image. `DB_HOST` must always be specified whereas the other DB variables are initialized in the Dockerfile so defaults are assumed.
+The image looks for a MySQL DB named *ibm_ucb* on port 3306 by default. The environment variables `DB_HOST`, `MYSQL_PORT`, `DB_NAME`, `DB_USER`, and `DB_PASSWORD` are available when running the image. `DB_HOST` must always be specified whereas the other DB variables are initialized in the Dockerfile so defaults are assumed.
 
 You should use the official MySQL image on Docker Hub as shown in the Docker Compose file. For example:
 ```
