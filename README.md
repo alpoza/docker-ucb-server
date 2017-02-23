@@ -18,7 +18,7 @@ docker run -d -e MYSQL_ROOT_PASSWORD=password -e MYSQL_DATABASE=ibm_ucb -e MYSQL
 ```
 
 ####Run the image
-The environment variables `HTTPS_PORT` and `JMS_PORT` are available for customization via `-e` when running the UrbanCode Build image however these default to 8443 and 7919 respectively. You can also still bind to any ports on the Docker host. `BUILD_SERVER_HOSTNAME` (FQDN or external IP/URL) and `DB_HOST` are required environment variables when running the image.
+The environment variables `HTTPS_PORT` and `JMS_PORT` are available for customization via `-e` when running the UrbanCode Build image however these default to 8443 and 7919 respectively. You can bind these container ports to any unused ports on the Docker host at runtime. `BUILD_SERVER_HOSTNAME` (FQDN or external IP/URL) and `DB_HOST` are **required environment variables** when running the image.
 
 Using the Compose file, modify `BUILD_SERVER_HOSTNAME` and port bindings as desired then execute `docker-compose up`.
 
