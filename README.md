@@ -1,6 +1,8 @@
 ##docker-ucb-server
 
-An easy way to evaluate UrbanCode Build. This repo contains instructions and the Dockerfile for [mkorejo/ucb-server](https://hub.docker.com/r/mkorejo/ucb-server/).
+Run [IBM UrbanCode Build](https://www.youtube.com/watch?v=Kz0HY1DdDnU) on Docker. This repo contains instructions and the Dockerfile for [mkorejo/ucb-server](https://hub.docker.com/r/mkorejo/ucb-server/).
+
+<img src="https://www.ibm.com/developerworks/library/d-deploy-docker-containers-hybrid-clouds-ibm-urbancode-2-trs-bluemix/image013.jpg" width="590" height="250" />
 
 ####Build the image
 To build the image you must specify `ARTIFACT_DOWNLOAD_URL` as a build argument and the value must be a direct link to the UrbanCode Build installation software. `docker build` downloads and extracts the UrbanCode Build installation software to create the image. UrbanCode Build is installed when the container is launched.
