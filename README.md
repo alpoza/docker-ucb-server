@@ -1,4 +1,4 @@
-## docker-ucb-server
+## IBM UrbanCode Build w/MySQL on Docker
 
 Run [IBM UrbanCode Build](https://www.youtube.com/watch?v=Kz0HY1DdDnU) on Docker. This repo contains instructions and the Dockerfile for [mkorejo/ucb-server](https://hub.docker.com/r/mkorejo/ucb-server/).
 
