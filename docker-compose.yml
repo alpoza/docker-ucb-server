@@ -14,8 +14,9 @@ services:
     environment:
       - BUILD_SERVER_HOSTNAME=<server-hostname-or-ip>
       - DB_HOST=ucb-db
+      - HTTPS_PORT=9443
     ports:
-      - 8443:8443
+      - 9443:9443
       - 7919:7919
     depends_on:
       - ucb-db
