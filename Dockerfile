@@ -9,7 +9,7 @@ COPY install.properties /tmp
 COPY entrypoint.sh /ucb_entrypoint.sh
 
 RUN cd /tmp && curl -Lk $ARTIFACT_DOWNLOAD_URL > ucb-server.zip \
-  && curl -Lk https://goo.gl/xScbnv > mysql_jdbc.jar \
+  && curl -Lk https://goo.gl/wTTngT > mysql_jdbc.jar \
   && unzip /tmp/ucb-server.zip \
   && mv /tmp/install.properties /tmp/ibm-ucb-install/install.properties \
   && mv /tmp/mysql_jdbc.jar /tmp/ibm-ucb-install/lib/ext \
